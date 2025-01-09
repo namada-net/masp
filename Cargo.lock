@@ -248,19 +248,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bls12_381"
-version = "0.8.0"
-source = "git+https://github.com/heliaxdev/bls12_381.git?rev=d3ebe9dd6488fac1923db120a7498079e55dd838#d3ebe9dd6488fac1923db120a7498079e55dd838"
-dependencies = [
- "arbitrary",
- "ff",
- "group",
- "pairing",
- "rand_core",
- "subtle",
-]
-
-[[package]]
 name = "borsh"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -425,6 +412,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7144d30dcf0fafbce74250a3963025d8d52177934239851c917d29f1df280c2"
 
 [[package]]
+name = "core2"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "239fa3ae9b63c2dc74bd3fa852d4792b8b305ae64eeede946265b6af62f1fff3"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "cpp_demangle"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -456,7 +452,7 @@ dependencies = [
  "criterion-plot",
  "itertools 0.10.5",
  "lazy_static",
- "num-traits 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits",
  "oorandom",
  "plotters",
  "rayon",
@@ -648,7 +644,7 @@ dependencies = [
  "libm",
  "num-bigint",
  "num-integer",
- "num-traits 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits",
 ]
 
 [[package]]
@@ -857,21 +853,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8499f7a74008aafbecb2a2e608a3e13e4dd3e84df198b604451efe93f2de6e61"
 dependencies = [
  "bitvec",
- "bls12_381 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ff",
- "group",
- "rand_core",
- "subtle",
-]
-
-[[package]]
-name = "jubjub"
-version = "0.10.0"
-source = "git+https://github.com/heliaxdev/jubjub.git?rev=a373686962f4e9d0edb3b4716f86ff6bbd9aa86c#a373686962f4e9d0edb3b4716f86ff6bbd9aa86c"
-dependencies = [
- "arbitrary",
- "bitvec",
- "bls12_381 0.8.0 (git+https://github.com/heliaxdev/bls12_381.git?rev=d3ebe9dd6488fac1923db120a7498079e55dd838)",
+ "bls12_381",
  "ff",
  "group",
  "rand_core",
@@ -952,7 +934,6 @@ dependencies = [
  "bitvec",
  "blake2b_simd",
  "blake2s_simd",
- "bls12_381 0.8.0 (git+https://github.com/heliaxdev/bls12_381.git?rev=d3ebe9dd6488fac1923db120a7498079e55dd838)",
  "borsh",
  "byteorder",
  "chacha20poly1305",
@@ -962,12 +943,13 @@ dependencies = [
  "group",
  "hex",
  "incrementalmerkletree",
- "jubjub 0.10.0 (git+https://github.com/heliaxdev/jubjub.git?rev=a373686962f4e9d0edb3b4716f86ff6bbd9aa86c)",
  "lazy_static",
  "masp_note_encryption",
  "memuse",
+ "nam-bls12_381",
+ "nam-jubjub",
+ "nam-num-traits",
  "nonempty",
- "num-traits 0.2.19 (git+https://github.com/heliaxdev/num-traits?rev=3f3657caa34b8e116fdf3f8a3519c4ac29f012fe)",
  "proptest",
  "rand",
  "rand_core",
@@ -983,17 +965,17 @@ version = "1.0.0"
 dependencies = [
  "bellman",
  "blake2b_simd",
- "bls12_381 0.8.0 (git+https://github.com/heliaxdev/bls12_381.git?rev=d3ebe9dd6488fac1923db120a7498079e55dd838)",
  "byteorder",
  "criterion",
  "directories",
  "getrandom",
  "group",
  "itertools 0.11.0",
- "jubjub 0.10.0 (git+https://github.com/heliaxdev/jubjub.git?rev=a373686962f4e9d0edb3b4716f86ff6bbd9aa86c)",
  "lazy_static",
  "masp_primitives",
  "minreq",
+ "nam-bls12_381",
+ "nam-jubjub",
  "pprof",
  "rand_core",
  "rand_xorshift",
@@ -1045,6 +1027,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "nam-bls12_381"
+version = "0.8.1-nam.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e768b0e2383163f2f4bbce1112d6454b2cb515950b0a9177733f0d71254d2c68"
+dependencies = [
+ "arbitrary",
+ "ff",
+ "group",
+ "pairing",
+ "rand_core",
+ "subtle",
+]
+
+[[package]]
+name = "nam-jubjub"
+version = "0.10.1-nam.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bdced0f5975d8f80cb82a84d464481acb7b586d22f447dda86947d6a572997b9"
+dependencies = [
+ "arbitrary",
+ "bitvec",
+ "ff",
+ "group",
+ "nam-bls12_381",
+ "rand_core",
+ "subtle",
+]
+
+[[package]]
+name = "nam-num-traits"
+version = "0.2.20-nam.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "687832a07242b76ab2760bc95180240954bf77e06bf8d9e825473c373146dc4a"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
 name = "nix"
 version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1068,7 +1088,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c165a9ab64cf766f73521c0dd2cfdff64f488b8f0b3e621face3462d3db536d7"
 dependencies = [
  "num-integer",
- "num-traits 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits",
 ]
 
 [[package]]
@@ -1087,7 +1107,7 @@ version = "0.1.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7969661fd2958a5cb096e56c8e1ad0444ac2bbcd0061bd28660485a44879858f"
 dependencies = [
- "num-traits 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits",
 ]
 
 [[package]]
@@ -1098,14 +1118,6 @@ checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
  "autocfg",
  "libm",
-]
-
-[[package]]
-name = "num-traits"
-version = "0.2.19"
-source = "git+https://github.com/heliaxdev/num-traits?rev=3f3657caa34b8e116fdf3f8a3519c4ac29f012fe#3f3657caa34b8e116fdf3f8a3519c4ac29f012fe"
-dependencies = [
- "autocfg",
 ]
 
 [[package]]
@@ -1229,7 +1241,7 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2c224ba00d7cadd4d5c660deaf2098e5e80e07846537c51f9cfa4be50c1fd45"
 dependencies = [
- "num-traits 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits",
  "plotters-backend",
  "plotters-svg",
  "wasm-bindgen",
@@ -1341,7 +1353,7 @@ dependencies = [
  "bit-vec",
  "bitflags 2.5.0",
  "lazy_static",
- "num-traits 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits",
  "rand",
  "rand_chacha",
  "rand_xorshift",
@@ -1450,7 +1462,7 @@ dependencies = [
  "byteorder",
  "group",
  "hex",
- "jubjub 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jubjub",
  "pasta_curves",
  "rand_core",
  "serde",
@@ -2143,10 +2155,11 @@ dependencies = [
 
 [[package]]
 name = "zcash_encoding"
-version = "0.2.0"
-source = "git+https://github.com/zcash/librustzcash?rev=bd7f9d7#bd7f9d7c3ce5cfd14af169ffe0e1c5c903162f46"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3654116ae23ab67dd1f849b01f8821a8a156f884807ff665eac109bf28306c4d"
 dependencies = [
- "byteorder",
+ "core2",
  "nonempty",
 ]
 
