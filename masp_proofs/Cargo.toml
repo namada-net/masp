@@ -1,7 +1,7 @@
 [package]
 name = "masp_proofs"
 description = "Experimental MASP zk-SNARK circuits and proving APIs, based on zcash_proofs"
-version = "1.0.0"
+version.workspace = true
 authors = ["Jack Grigg <jack@z.cash>", "joe <joe@heliax.dev>"]
 homepage = "https://github.com/anoma/masp"
 repository = "https://github.com/anoma/masp"
