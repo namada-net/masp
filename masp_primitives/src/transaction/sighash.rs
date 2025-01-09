@@ -12,8 +12,6 @@ use super::{
 };
 
 use crate::asset_type::AssetType;
-#[cfg(feature = "zfuture")]
-use crate::extensions::transparent::Precondition;
 
 pub const SIGHASH_ALL: u8 = 0x01;
 pub const SIGHASH_NONE: u8 = 0x02;
