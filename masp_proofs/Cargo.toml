@@ -33,7 +33,7 @@ tracing = "0.1"
 blake2b_simd = "1"
 directories = { version = "5.0", optional = true }
 # This pulls the reddsa library that contains hardcoded personalizations and basepoints. If you need to work on a new project consider forking `reddsa`, modifying it to your needs and patching it in the root manifest
-redjubjub = "0.7"
+redjubjub = {package = "nam-redjubjub", version = "0.7.1-nam.0" }
 getrandom = { version = "0.2" }
 itertools = "0.14"
 
