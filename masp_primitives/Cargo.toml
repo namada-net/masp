@@ -1,7 +1,7 @@
 [package]
 name = "masp_primitives"
 description = "Rust implementations of the experimental MASP primitives (derived from zcash_primitives)"
-version = "1.0.0"
+version.workspace = true
 authors = [
     "Jack Grigg <jack@z.cash>",
     "Kris Nuttycombe <kris@electriccoin.co>",
@@ -21,7 +21,7 @@ categories = ["cryptography::cryptocurrencies"]
 all-features = true
 
 [dependencies]
-zcash_encoding = { version = "0.2", git = "https://github.com/zcash/librustzcash", rev = "bd7f9d7" }
+zcash_encoding = { version = "0.2.2" }
 
 # Dependencies exposed in a public API:
 # (Breaking upgrades to these require a breaking upgrade to this crate.)
@@ -37,20 +37,18 @@ sha2 = "0.10"
 memuse = "0.2.1"
 
 # - Checked arithmetic
-num-traits = { version = "0.2.19", git = "https://github.com/heliaxdev/num-traits", rev = "3f3657caa34b8e116fdf3f8a3519c4ac29f012fe" }
+num-traits = { package = "nam-num-traits", version = "0.2.20-nam.0" }
 
 # - Secret management
 subtle = "2.2.3"
 
 # - Shielded protocols
-# branch "tomas/arbitrary"
-bls12_381 = { git = "https://github.com/heliaxdev/bls12_381.git", rev = "d3ebe9dd6488fac1923db120a7498079e55dd838" }
+bls12_381 = { package = "nam-bls12_381", version = "0.8.1-nam.0" }
 ff = "0.13"
 group = { version = "0.13", features = ["wnaf-memuse"] }
 incrementalmerkletree = "0.3"
-# branch "tomas/arbitrary"
-jubjub = { git = "https://github.com/heliaxdev/jubjub.git", rev = "a373686962f4e9d0edb3b4716f86ff6bbd9aa86c" }
-nonempty = "0.7"
+jubjub = { package = "nam-jubjub", version = "0.10.1-nam.0" }
+nonempty = "0.11"
 
 # - Static constants
 lazy_static = "1"
@@ -85,7 +83,7 @@ features = ["pre-zip-212"]
 
 [dev-dependencies]
 chacha20poly1305 = "0.10"
-criterion = "0.4"
+criterion = "0.5"
 proptest = "1.0.0"
 assert_matches = "1.3.0"
 rand_xorshift = "0.3"

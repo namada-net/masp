@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub struct TestVector {
     pub ovk: [u8; 32],
     pub ivk: [u8; 32],

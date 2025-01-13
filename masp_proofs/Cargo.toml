@@ -1,7 +1,7 @@
 [package]
 name = "masp_proofs"
 description = "Experimental MASP zk-SNARK circuits and proving APIs, based on zcash_proofs"
-version = "1.0.0"
+version.workspace = true
 authors = ["Jack Grigg <jack@z.cash>", "joe <joe@heliax.dev>"]
 homepage = "https://github.com/anoma/masp"
 repository = "https://github.com/anoma/masp"
@@ -20,11 +20,9 @@ masp_primitives = { version = "1.0.0", path = "../masp_primitives" }
 # Dependencies exposed in a public API:
 # (Breaking upgrades to these require a breaking upgrade to this crate.)
 bellman = { version = "0.14", default-features = false, features = ["groth16"] }
-# branch "tomas/arbitrary"
-bls12_381 = { git = "https://github.com/heliaxdev/bls12_381.git", rev = "d3ebe9dd6488fac1923db120a7498079e55dd838" }
+bls12_381 = { package = "nam-bls12_381", version = "0.8.1-nam.0" }
 group = "0.13"
-# branch "tomas/arbitrary"
-jubjub = { git = "https://github.com/heliaxdev/jubjub.git", rev = "a373686962f4e9d0edb3b4716f86ff6bbd9aa86c" }
+jubjub = { package = "nam-jubjub", version = "0.10.1-nam.0" }
 lazy_static = "1"
 minreq = { version = "2.11.0", features = ["https"], optional = true }
 rand_core = "0.6"
@@ -33,19 +31,19 @@ tracing = "0.1"
 # Dependencies used internally:
 # (Breaking upgrades to these are usually backwards-compatible, but check MSRVs.)
 blake2b_simd = "1"
-directories = { version = "4", optional = true }
+directories = { version = "5.0", optional = true }
 # This pulls the reddsa library that contains hardcoded personalizations and basepoints. If you need to work on a new project consider forking `reddsa`, modifying it to your needs and patching it in the root manifest
-redjubjub = "0.7"
+redjubjub = {package = "nam-redjubjub", version = "0.7.1-nam.0" }
 getrandom = { version = "0.2" }
-itertools = "0.11"
+itertools = "0.14"
 
 [dev-dependencies]
 byteorder = "1"
-criterion = "0.4"
+criterion = "0.5"
 rand_xorshift = "0.3"
 
 [target.'cfg(unix)'.dev-dependencies]
-pprof = { version = "0.11", features = ["criterion", "flamegraph"] } # MSRV 1.56
+pprof = { version = "0.14", features = ["criterion", "flamegraph"] }
 
 [features]
 default = ["local-prover", "multicore"]

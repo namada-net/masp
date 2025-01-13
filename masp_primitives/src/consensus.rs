@@ -372,8 +372,7 @@ pub mod testing {
             .height_bounds(params)
             .map_or(Strategy::boxed(Just(None)), |(lower, upper)| {
                 Strategy::boxed(
-                    (lower.0..upper.map_or(std::u32::MAX, |u| u.0))
-                        .prop_map(|h| Some(BlockHeight(h))),
+                    (lower.0..upper.map_or(u32::MAX, |u| u.0)).prop_map(|h| Some(BlockHeight(h))),
                 )
             })
     }

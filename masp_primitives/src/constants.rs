@@ -277,7 +277,7 @@ mod tests {
             let gh = group_hash(&tag, personalization);
 
             // We don't want to overflow and start reusing generators
-            assert!(tag[i] != u8::max_value());
+            assert!(tag[i] != u8::MAX);
             tag[i] += 1;
 
             if let Some(gh) = gh {
