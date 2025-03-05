@@ -29,7 +29,7 @@ jobs:
         run: echo "MASP_PARAMS=$(cargo run --release --example get-params-path --features directories)" >> $GITHUB_ENV
       - name: Cache MASP parameters
         id: cache-params
-        uses: actions/cache@v3.3.2
+        uses: actions/cache@v4
         with:
           path: ${{ env.MASP_PARAMS }}
           key: ${{ runner.os }}-params
@@ -131,6 +131,8 @@ jobs:
       image: rustlang/rust:nightly
     steps:
     - uses: actions/checkout@v3
+    - name: Add target
+      run: rustup toolchain install 1.81.0-x86_64-unknown-linux-gnu
     - name: Install cargo-audit
       run: cargo install cargo-audit
     - name: Cargo Audit
