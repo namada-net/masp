@@ -1061,7 +1061,7 @@ checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
 
 [[package]]
 name = "masp_note_encryption"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "arbitrary",
  "borsh",
@@ -1074,7 +1074,7 @@ dependencies = [
 
 [[package]]
 name = "masp_primitives"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "aes",
  "arbitrary",
@@ -1110,7 +1110,7 @@ dependencies = [
 
 [[package]]
 name = "masp_proofs"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "bellman",
  "blake2b_simd",
