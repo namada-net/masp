@@ -440,15 +440,26 @@ where
     type Output = ValueSum<Unit, <Lhs as CheckedMul<Rhs>>::Output>;
 
     fn mul(self, rhs: Rhs) -> Self::Output {
+        self.checked_mul(rhs).expect("overflow detected")
+    }
+}
+
+impl<Unit, Lhs, Rhs> CheckedMul<Rhs> for ValueSum<Unit, Lhs>
+where
+    Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedMul<Rhs>,
+    Rhs: Copy,
+    <Lhs as CheckedMul<Rhs>>::Output: Default + BorshSerialize + BorshDeserialize + Eq,
+{
+    type Output = ValueSum<Unit, <Lhs as CheckedMul<Rhs>>::Output>;
+
+    fn checked_mul(self, rhs: Rhs) -> Option<Self::Output> {
         let mut comps = BTreeMap::new();
         for (atype, amount) in self.0.iter() {
-            comps.insert(
-                atype.clone(),
-                amount.checked_mul(rhs).expect("overflow detected"),
-            );
+            comps.insert(atype.clone(), amount.checked_mul(rhs)?);
         }
         comps.retain(|_, v| *v != <Lhs as CheckedMul<Rhs>>::Output::default());
-        ValueSum(comps)
+        Some(ValueSum(comps))
     }
 }
 
