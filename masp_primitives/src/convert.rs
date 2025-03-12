@@ -16,7 +16,7 @@ use std::collections::BTreeMap;
 use std::{
     io::{self, Write},
     iter::Sum,
-    ops::{Add, AddAssign, Sub, SubAssign},
+    ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -193,6 +193,17 @@ impl SubAssign for AllowedConversion {
     fn sub_assign(&mut self, rhs: Self) {
         self.assets -= rhs.assets;
         self.generator -= rhs.generator;
+    }
+}
+
+impl Neg for AllowedConversion {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        Self {
+            assets: -self.assets,
+            generator: -self.generator,
+        }
     }
 }
 
