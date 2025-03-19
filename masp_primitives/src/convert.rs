@@ -143,20 +143,18 @@ impl BorshSerialize for AllowedConversion {
 }
 
 impl BorshDeserialize for AllowedConversion {
-    /// This deserialization is unsafe because it does not do the expensive
-    /// computation of checking whether the asset generator corresponds to the
-    /// deserialized amount.
     fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
-        let assets = I128Sum::read(reader)?;
-        let gen_bytes =
-            <<jubjub::ExtendedPoint as GroupEncoding>::Repr as BorshDeserialize>::deserialize_reader(reader)?;
-        let generator = Option::from(jubjub::ExtendedPoint::from_bytes(&gen_bytes))
-            .ok_or_else(|| io::Error::from(io::ErrorKind::InvalidData))?;
-        let allowed_conversion: AllowedConversion = assets.clone().into();
-        if allowed_conversion.generator != generator {
-            return Err(io::Error::from(io::ErrorKind::InvalidData));
+        // Use the unchecked reader to ensure that same format is supported
+        let unchecked_conv = UncheckedAllowedConversion::deserialize_reader(reader)?.0;
+        // Recompute the generator using only the value sum
+        let safe_conv: AllowedConversion = unchecked_conv.assets.clone().into();
+        // Check that the computed generator is identical to what was read
+        if safe_conv.generator == unchecked_conv.generator {
+            Ok(safe_conv)
+        } else {
+            // The generators do not match, so the bytes cannot be from Self::serialize
+            Err(io::Error::from(io::ErrorKind::InvalidData))
         }
-        Ok(AllowedConversion { assets, generator })
     }
 }
 
@@ -210,6 +208,25 @@ impl Neg for AllowedConversion {
 impl Sum for AllowedConversion {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(AllowedConversion::from(ValueSum::zero()), Add::add)
+    }
+}
+
+/// A seprate type to allow unchecked deserializations of AllowedConversions
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UncheckedAllowedConversion(pub AllowedConversion);
+
+impl BorshDeserialize for UncheckedAllowedConversion {
+    /// This deserialization is unchecked because it does not do the expensive
+    /// computation of checking whether the asset generator corresponds to the
+    /// deserialized amount.
+    fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
+        let assets = I128Sum::read(reader)?;
+        let gen_bytes =
+            <<jubjub::ExtendedPoint as GroupEncoding>::Repr as BorshDeserialize>::deserialize_reader(reader)?;
+        let generator = Option::from(jubjub::ExtendedPoint::from_bytes(&gen_bytes))
+            .ok_or_else(|| io::Error::from(io::ErrorKind::InvalidData))?;
+        // Assume that the generator just read corresponds to the value sum
+        Ok(Self(AllowedConversion { assets, generator }))
     }
 }
 
