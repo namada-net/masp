@@ -853,7 +853,7 @@ impl<
         }
 
         let allowed_amt: I128Sum = allowed.clone().into();
-        self.value_balance += I128Sum::from_sum(allowed_amt) * (value as i128);
+        self.value_balance += I128Sum::from_sum(allowed_amt) * &(value as i128);
 
         self.converts.push(ConvertDescriptionInfo {
             allowed,
