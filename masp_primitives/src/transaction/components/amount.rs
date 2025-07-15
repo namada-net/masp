@@ -92,6 +92,40 @@ where
             Err(())
         }
     }
+
+    /// Compute the infimum of two ValueSums
+    pub fn inf(&self, rhs: &Self) -> Self {
+        let mut comps = BTreeMap::new();
+        for (atype, rhs_amount) in rhs.components() {
+            // rhs_amount is positive by definition
+            let lhs_amount = self.get(atype);
+            if lhs_amount == Value::default() {
+                continue;
+            } else if lhs_amount <= *rhs_amount {
+                // lhs_amount is positive since first branch was skipped
+                comps.insert(atype.clone(), lhs_amount);
+            } else {
+                comps.insert(atype.clone(), *rhs_amount);
+            }
+        }
+        ValueSum(comps)
+    }
+
+    /// Compute the supremum of two ValueSums
+    pub fn sup(&self, rhs: &Self) -> Self {
+        let mut comps = BTreeMap::new();
+        for (atype, rhs_amount) in rhs.components() {
+            // rhs_amount is positive by definition
+            let lhs_amount = self.get(atype);
+            if lhs_amount <= *rhs_amount {
+                comps.insert(atype.clone(), *rhs_amount);
+            } else {
+                // lhs_amount is positive since it's more than rhs_amount
+                comps.insert(atype.clone(), lhs_amount);
+            }
+        }
+        ValueSum(comps)
+    }
 }
 
 impl<Unit, Value> ValueSum<Unit, Value>
