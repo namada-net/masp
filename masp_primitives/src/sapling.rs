@@ -14,7 +14,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ff::{Field, PrimeField};
 use group::{Curve, Group, GroupEncoding, cofactor::CofactorGroup};
-use incrementalmerkletree::{self, Altitude};
+use incrementalmerkletree::{self, Level};
 use lazy_static::lazy_static;
 use rand_core::{CryptoRng, RngCore};
 use std::{
@@ -111,14 +111,14 @@ impl incrementalmerkletree::Hashable for Node {
         }
     }
 
-    fn combine(altitude: Altitude, lhs: &Self, rhs: &Self) -> Self {
+    fn combine(level: Level, lhs: &Self, rhs: &Self) -> Self {
         Node {
-            repr: merkle_hash(altitude.into(), &lhs.repr, &rhs.repr),
+            repr: merkle_hash(level.into(), &lhs.repr, &rhs.repr),
         }
     }
 
-    fn empty_root(altitude: Altitude) -> Self {
-        EMPTY_ROOTS[<usize>::from(altitude)]
+    fn empty_root(level: Level) -> Self {
+        EMPTY_ROOTS[<usize>::from(level)]
     }
 }
 
