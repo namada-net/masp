@@ -4,7 +4,7 @@ use borsh::schema::Fields;
 use borsh::schema::{Declaration, Definition};
 use borsh::BorshSchema;
 use borsh::{BorshDeserialize, BorshSerialize};
-use num_traits::{CheckedAdd, CheckedMul, CheckedNeg, CheckedSub, One};
+use num_traits::{CheckedAdd, CheckedMul, CheckedNeg, CheckedSub, ConstZero, One, Zero};
 use std::cmp::Ordering;
 use std::collections::btree_map::Keys;
 use std::collections::btree_map::{IntoIter, Iter};
@@ -78,13 +78,13 @@ where
 impl<Unit, Value> ValueSum<Unit, Value>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Value: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + PartialOrd,
+    Value: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + PartialOrd,
 {
     /// Creates a non-negative ValueSum from a Value.
     pub fn from_nonnegative(atype: Unit, amount: Value) -> Result<Self, ()> {
-        if amount == Value::default() {
+        if amount.is_zero() {
             Ok(Self::zero())
-        } else if Value::default() <= amount {
+        } else if Value::zero() <= amount {
             let mut ret = BTreeMap::new();
             ret.insert(atype, amount);
             Ok(ValueSum(ret))
@@ -99,7 +99,7 @@ where
         for (atype, rhs_amount) in rhs.components() {
             // rhs_amount is positive by definition
             let lhs_amount = self.get(atype);
-            if lhs_amount == Value::default() {
+            if lhs_amount.is_zero() {
                 continue;
             } else if lhs_amount <= *rhs_amount {
                 // lhs_amount is positive since first branch was skipped
@@ -131,11 +131,11 @@ where
 impl<Unit, Value> ValueSum<Unit, Value>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Value: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
+    Value: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
 {
     /// Creates an ValueSum from a Value.
     pub fn from_pair(atype: Unit, amount: Value) -> Self {
-        if amount == Value::default() {
+        if amount.is_zero() {
             Self::zero()
         } else {
             let mut ret = BTreeMap::new();
@@ -146,13 +146,13 @@ where
 
     /// Filters out everything but the given AssetType from this ValueSum
     pub fn project(&self, index: Unit) -> Self {
-        let val = self.0.get(&index).copied().unwrap_or_default();
+        let val = self.0.get(&index).copied().unwrap_or(Value::zero());
         Self::from_pair(index, val)
     }
 
     /// Get the given AssetType within this ValueSum
     pub fn get(&self, index: &Unit) -> Value {
-        *self.0.get(index).unwrap_or(&Value::default())
+        *self.0.get(index).unwrap_or(&Value::zero())
     }
 }
 
@@ -191,6 +191,20 @@ where
         let mut val = self.clone();
         val.0.remove(&index);
         val
+    }
+}
+
+impl<Unit, Value> Zero for ValueSum<Unit, Value>
+where
+    Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
+    Value: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy,
+{
+    fn zero() -> Self {
+        Self(BTreeMap::new())
+    }
+
+    fn is_zero(&self) -> bool {
+        self.0.is_empty()
     }
 }
 
@@ -377,12 +391,12 @@ where
 impl<Unit, Value> PartialOrd for ValueSum<Unit, Value>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Value: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + PartialOrd,
+    Value: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + PartialOrd,
 {
     /// One ValueSum is more than or equal to another if each corresponding
     /// coordinate is more than or equal to the other's.
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        let zero = Value::default();
+        let zero = Value::zero();
         let mut ordering = Some(Ordering::Equal);
         for k in self.0.keys().chain(other.0.keys()) {
             let v1 = self.0.get(k).unwrap_or(&zero);
@@ -421,7 +435,9 @@ macro_rules! impl_index {
             type Output = $struct_type;
             /// Query how much of the given asset this amount contains
             fn index(&self, index: &Unit) -> &Self::Output {
-                self.0.get(index).unwrap_or(&0)
+                self.0
+                    .get(index)
+                    .unwrap_or(&<$struct_type as ConstZero>::ZERO)
             }
         }
     };
@@ -455,7 +471,7 @@ where
         + PartialEq
         + Eq
         + Copy
-        + Default
+        + Zero
         + CheckedMul<Rhs, Output = Lhs>,
     Rhs: Copy,
 {
@@ -467,9 +483,9 @@ where
 impl<Unit, Lhs, Rhs> Mul<&Rhs> for ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedMul<Rhs>,
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedMul<Rhs>,
     Rhs: Copy,
-    <Lhs as CheckedMul<Rhs>>::Output: Default + BorshSerialize + BorshDeserialize + Eq,
+    <Lhs as CheckedMul<Rhs>>::Output: Zero + BorshSerialize + BorshDeserialize + Eq,
 {
     type Output = ValueSum<Unit, <Lhs as CheckedMul<Rhs>>::Output>;
 
@@ -481,9 +497,9 @@ where
 impl<Unit, Lhs, Rhs> CheckedMul<&Rhs> for ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedMul<Rhs>,
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedMul<Rhs>,
     Rhs: Copy,
-    <Lhs as CheckedMul<Rhs>>::Output: Default + BorshSerialize + BorshDeserialize + Eq,
+    <Lhs as CheckedMul<Rhs>>::Output: Zero + BorshSerialize + BorshDeserialize + Eq,
 {
     type Output = ValueSum<Unit, <Lhs as CheckedMul<Rhs>>::Output>;
 
@@ -492,7 +508,7 @@ where
         for (atype, amount) in self.0.iter() {
             comps.insert(atype.clone(), amount.checked_mul(*rhs)?);
         }
-        comps.retain(|_, v| *v != <Lhs as CheckedMul<Rhs>>::Output::default());
+        comps.retain(|_, v| *v != <Lhs as CheckedMul<Rhs>>::Output::zero());
         Some(ValueSum(comps))
     }
 }
@@ -505,9 +521,9 @@ where
         + PartialEq
         + Eq
         + Copy
-        + Default
+        + Zero
         + CheckedAdd<Rhs, Output = Lhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
 {
     fn add_assign(&mut self, rhs: &ValueSum<Unit, Rhs>) {
         *self = self.clone() + rhs;
@@ -522,9 +538,9 @@ where
         + PartialEq
         + Eq
         + Copy
-        + Default
+        + Zero
         + CheckedAdd<Rhs, Output = Lhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
 {
     fn add_assign(&mut self, rhs: ValueSum<Unit, Rhs>) {
         *self += &rhs
@@ -534,9 +550,9 @@ where
 impl<Unit, Lhs, Rhs> Add<&ValueSum<Unit, Rhs>> for ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedAdd<Rhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
-    <Lhs as CheckedAdd<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Default,
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedAdd<Rhs>,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
+    <Lhs as CheckedAdd<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Zero,
 {
     type Output = ValueSum<Unit, <Lhs as CheckedAdd<Rhs>>::Output>;
 
@@ -548,9 +564,9 @@ where
 impl<Unit, Lhs, Rhs> Add<ValueSum<Unit, Rhs>> for ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedAdd<Rhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
-    <Lhs as CheckedAdd<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Default,
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedAdd<Rhs>,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
+    <Lhs as CheckedAdd<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Zero,
 {
     type Output = ValueSum<Unit, <Lhs as CheckedAdd<Rhs>>::Output>;
 
@@ -562,21 +578,21 @@ where
 impl<Unit, Lhs, Rhs> CheckedAdd<&ValueSum<Unit, Rhs>> for &ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedAdd<Rhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
-    <Lhs as CheckedAdd<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Default,
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedAdd<Rhs>,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
+    <Lhs as CheckedAdd<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Zero,
 {
     type Output = ValueSum<Unit, <Lhs as CheckedAdd<Rhs>>::Output>;
 
     fn checked_add(self, v: &ValueSum<Unit, Rhs>) -> Option<Self::Output> {
         let mut comps = BTreeMap::new();
         for (atype, amount) in self.components() {
-            comps.insert(atype.clone(), amount.checked_add(Rhs::default())?);
+            comps.insert(atype.clone(), amount.checked_add(Rhs::zero())?);
         }
         for (atype, amount) in v.components() {
             comps.insert(atype.clone(), self.get(atype).checked_add(*amount)?);
         }
-        comps.retain(|_, v| *v != <Lhs as CheckedAdd<Rhs>>::Output::default());
+        comps.retain(|_, v| *v != <Lhs as CheckedAdd<Rhs>>::Output::zero());
         Some(ValueSum(comps))
     }
 }
@@ -589,9 +605,9 @@ where
         + PartialEq
         + Eq
         + Copy
-        + Default
+        + Zero
         + CheckedSub<Rhs, Output = Lhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
 {
     fn sub_assign(&mut self, rhs: &ValueSum<Unit, Rhs>) {
         *self = self.clone() - rhs
@@ -606,9 +622,9 @@ where
         + PartialEq
         + Eq
         + Copy
-        + Default
+        + Zero
         + CheckedSub<Rhs, Output = Lhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
 {
     fn sub_assign(&mut self, rhs: ValueSum<Unit, Rhs>) {
         *self -= &rhs
@@ -618,15 +634,9 @@ where
 impl<Unit, Value> Neg for ValueSum<Unit, Value>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Value: BorshSerialize
-        + BorshDeserialize
-        + PartialEq
-        + Eq
-        + Copy
-        + Default
-        + PartialOrd
-        + CheckedNeg,
-    <Value as CheckedNeg>::Output: BorshSerialize + BorshDeserialize + Eq + Default,
+    Value:
+        BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + PartialOrd + CheckedNeg,
+    <Value as CheckedNeg>::Output: BorshSerialize + BorshDeserialize + Eq + Zero,
 {
     type Output = ValueSum<Unit, <Value as CheckedNeg>::Output>;
 
@@ -638,7 +648,7 @@ where
                 amount.checked_neg().expect("overflow detected"),
             );
         }
-        comps.retain(|_, v| *v != <Value as CheckedNeg>::Output::default());
+        comps.retain(|_, v| *v != <Value as CheckedNeg>::Output::zero());
         ValueSum(comps)
     }
 }
@@ -646,9 +656,9 @@ where
 impl<Unit, Lhs, Rhs> Sub<&ValueSum<Unit, Rhs>> for ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedSub<Rhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
-    <Lhs as CheckedSub<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Default,
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedSub<Rhs>,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
+    <Lhs as CheckedSub<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Zero,
 {
     type Output = ValueSum<Unit, <Lhs as CheckedSub<Rhs>>::Output>;
 
@@ -660,9 +670,9 @@ where
 impl<Unit, Lhs, Rhs> Sub<ValueSum<Unit, Rhs>> for ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedSub<Rhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
-    <Lhs as CheckedSub<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Default,
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedSub<Rhs>,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
+    <Lhs as CheckedSub<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Zero,
 {
     type Output = ValueSum<Unit, <Lhs as CheckedSub<Rhs>>::Output>;
 
@@ -674,21 +684,21 @@ where
 impl<Unit, Lhs, Rhs> CheckedSub<&ValueSum<Unit, Rhs>> for &ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedSub<Rhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
-    <Lhs as CheckedSub<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Default,
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedSub<Rhs>,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
+    <Lhs as CheckedSub<Rhs>>::Output: BorshSerialize + BorshDeserialize + Eq + Zero,
 {
     type Output = ValueSum<Unit, <Lhs as CheckedSub<Rhs>>::Output>;
 
     fn checked_sub(self, v: &ValueSum<Unit, Rhs>) -> Option<Self::Output> {
         let mut comps = BTreeMap::new();
         for (atype, amount) in self.components() {
-            comps.insert(atype.clone(), amount.checked_sub(Rhs::default())?);
+            comps.insert(atype.clone(), amount.checked_sub(Rhs::zero())?);
         }
         for (atype, amount) in v.components() {
             comps.insert(atype.clone(), self.get(atype).checked_sub(*amount)?);
         }
-        comps.retain(|_, v| *v != <Lhs as CheckedSub<Rhs>>::Output::default());
+        comps.retain(|_, v| *v != <Lhs as CheckedSub<Rhs>>::Output::zero());
         Some(ValueSum(comps))
     }
 }
@@ -696,7 +706,7 @@ where
 impl<Unit, Value> Sum for ValueSum<Unit, Value>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Value: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + PartialOrd,
+    Value: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + PartialOrd,
     Self: Add<Output = Self>,
 {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
@@ -707,7 +717,7 @@ where
 impl<Unit, Output> ValueSum<Unit, Output>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Output: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
+    Output: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
 {
     pub fn try_from_sum<Value>(
         x: ValueSum<Unit, Value>,
@@ -720,7 +730,7 @@ where
         for (atype, amount) in x.0 {
             comps.insert(atype, amount.try_into()?);
         }
-        comps.retain(|_, v| *v != Output::default());
+        comps.retain(|_, v| *v != Output::zero());
         Ok(Self(comps))
     }
 
@@ -733,7 +743,7 @@ where
         for (atype, amount) in x.0 {
             comps.insert(atype, amount.into());
         }
-        comps.retain(|_, v| *v != Output::default());
+        comps.retain(|_, v| *v != Output::zero());
         Self(comps)
     }
 }
@@ -741,9 +751,9 @@ where
 impl<Unit, Lhs, Rhs> CheckedMul<&ValueSum<Unit, Rhs>> for ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedMul<Rhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
-    <Lhs as CheckedMul<Rhs>>::Output: Default
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedMul<Rhs>,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
+    <Lhs as CheckedMul<Rhs>>::Output: Zero
         + BorshSerialize
         + BorshDeserialize
         + Eq
@@ -752,7 +762,7 @@ where
     type Output = <Lhs as CheckedMul<Rhs>>::Output;
 
     fn checked_mul(self, rhs: &ValueSum<Unit, Rhs>) -> Option<Self::Output> {
-        let mut product = Self::Output::default();
+        let mut product = Self::Output::zero();
         for (atype, amount) in rhs.components() {
             product = product.checked_add(self.get(atype).checked_mul(*amount)?)?;
         }
@@ -763,9 +773,9 @@ where
 impl<Unit, Lhs, Rhs> Mul<&ValueSum<Unit, Rhs>> for ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedMul<Rhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
-    <Lhs as CheckedMul<Rhs>>::Output: Default
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedMul<Rhs>,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
+    <Lhs as CheckedMul<Rhs>>::Output: Zero
         + BorshSerialize
         + BorshDeserialize
         + Eq
@@ -781,9 +791,9 @@ where
 impl<Unit, Lhs, Rhs> Mul<ValueSum<Unit, Rhs>> for ValueSum<Unit, Lhs>
 where
     Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
-    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default + CheckedMul<Rhs>,
-    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Default,
-    <Lhs as CheckedMul<Rhs>>::Output: Default
+    Lhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + CheckedMul<Rhs>,
+    Rhs: BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero,
+    <Lhs as CheckedMul<Rhs>>::Output: Zero
         + BorshSerialize
         + BorshDeserialize
         + Eq
