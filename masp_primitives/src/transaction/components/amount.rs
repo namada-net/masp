@@ -97,14 +97,10 @@ where
     pub fn inf(&self, rhs: &Self) -> Self {
         let mut comps = BTreeMap::new();
         for (atype, rhs_amount) in rhs.components() {
-            // rhs_amount is positive by definition
             let lhs_amount = self.get(atype);
-            if lhs_amount.is_zero() {
-                continue;
-            } else if lhs_amount <= *rhs_amount {
-                // lhs_amount is positive since first branch was skipped
+            if lhs_amount <= *rhs_amount && !lhs_amount.is_zero() {
                 comps.insert(atype.clone(), lhs_amount);
-            } else {
+            } else if lhs_amount > *rhs_amount && !rhs_amount.is_zero() {
                 comps.insert(atype.clone(), *rhs_amount);
             }
         }
@@ -115,12 +111,10 @@ where
     pub fn sup(&self, rhs: &Self) -> Self {
         let mut comps = BTreeMap::new();
         for (atype, rhs_amount) in rhs.components() {
-            // rhs_amount is positive by definition
             let lhs_amount = self.get(atype);
-            if lhs_amount <= *rhs_amount {
+            if lhs_amount <= *rhs_amount && !rhs_amount.is_zero() {
                 comps.insert(atype.clone(), *rhs_amount);
-            } else {
-                // lhs_amount is positive since it's more than rhs_amount
+            } else if lhs_amount > *rhs_amount && !lhs_amount.is_zero() {
                 comps.insert(atype.clone(), lhs_amount);
             }
         }
