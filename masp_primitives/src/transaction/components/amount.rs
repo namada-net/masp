@@ -640,16 +640,27 @@ where
 {
     type Output = ValueSum<Unit, <Value as CheckedNeg>::Output>;
 
-    fn neg(mut self) -> Self::Output {
+    fn neg(self) -> Self::Output {
+        self.checked_neg().expect("overflow detected")
+    }
+}
+
+impl<Unit, Value> CheckedNeg for ValueSum<Unit, Value>
+where
+    Unit: Hash + Ord + BorshSerialize + BorshDeserialize + Clone,
+    Value:
+        BorshSerialize + BorshDeserialize + PartialEq + Eq + Copy + Zero + PartialOrd + CheckedNeg,
+    <Value as CheckedNeg>::Output: BorshSerialize + BorshDeserialize + Eq + Zero,
+{
+    type Output = ValueSum<Unit, <Value as CheckedNeg>::Output>;
+
+    fn checked_neg(mut self) -> Option<Self::Output> {
         let mut comps = BTreeMap::new();
         for (atype, amount) in self.0.iter_mut() {
-            comps.insert(
-                atype.clone(),
-                amount.checked_neg().expect("overflow detected"),
-            );
+            comps.insert(atype.clone(), amount.checked_neg()?);
         }
         comps.retain(|_, v| *v != <Value as CheckedNeg>::Output::zero());
-        ValueSum(comps)
+        Some(ValueSum(comps))
     }
 }
 
