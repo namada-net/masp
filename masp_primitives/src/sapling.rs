@@ -91,6 +91,46 @@ pub struct Node {
     repr: [u8; 32],
 }
 
+impl PartialOrd for Node {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Node {
+    fn cmp(&self, other: &Self) -> Ordering {
+        #[repr(C)]
+        struct Limb(u64, u64, u64, u64);
+
+        #[repr(C)]
+        struct Limbs {
+            this: Limb,
+            other: Limb,
+        }
+
+        // SAFETY: Getting 4 u64 limbs from `repr` is safe,
+        // given that the original values are 256-bit
+        let limbs: Limbs = unsafe {
+            let self_limbs: [u64; 4] = std::mem::transmute_copy(&self.repr);
+            let other_limbs: [u64; 4] = std::mem::transmute_copy(&other.repr);
+
+            // NB: Convert the data from its LE representation
+            // to our native endianness
+            std::mem::transmute((self_limbs.map(u64::from_le), other_limbs.map(u64::from_le)))
+        };
+
+        // NB: Compare the values in reverse order,
+        // since the original data is LE
+        limbs
+            .this
+            .3
+            .cmp(&limbs.other.3)
+            .then(limbs.this.2.cmp(&limbs.other.2))
+            .then(limbs.this.1.cmp(&limbs.other.1))
+            .then(limbs.this.0.cmp(&limbs.other.0))
+    }
+}
+
 impl Node {
     pub fn new(repr: [u8; 32]) -> Self {
         Node { repr }
@@ -1015,13 +1055,19 @@ pub mod testing {
 
 #[cfg(test)]
 mod tests {
+    use std::cmp::Ordering;
+
+    use bls12_381::Scalar;
+    use borsh::BorshDeserialize;
+    use ff::PrimeField;
+    use proptest::prelude::*;
+
+    use super::Node;
     use crate::{
         sapling::testing::{arb_note, arb_positive_note_value},
         sapling::Note,
         transaction::components::amount::MAX_MONEY,
     };
-    use borsh::BorshDeserialize;
-    use proptest::prelude::*;
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(10))]
@@ -1032,6 +1078,47 @@ mod tests {
             // BorshDeserialize
             let de_note: Note = BorshDeserialize::deserialize(&mut borsh.as_ref()).unwrap();
             prop_assert_eq!(note, de_note);
+        }
+
+        #[test]
+        fn node_cmp(
+            x in proptest::num::u128::ANY,
+            y in proptest::num::u128::ANY,
+        ) {
+            let x_bls = Scalar::from_u128(x);
+            let y_bls = Scalar::from_u128(y);
+
+            let x_node = Node::from_scalar(x_bls);
+            let y_node = Node::from_scalar(y_bls);
+
+            // NB: Big integer value less than or eq to modulus
+            let big = Scalar::zero().sub(&Scalar::one());
+            let big_node = Node::from_scalar(big);
+
+            prop_assert!(big_node > x_node);
+            prop_assert!(big_node > y_node);
+
+            // NB: Negate the values, since we subtracted big with x/y
+            let big_minus_x_neg = big.sub(&x_bls).neg();
+            let big_minus_y_neg = big.sub(&y_bls).neg();
+
+            let node_big_minus_x_neg = Node::from_scalar(big_minus_x_neg);
+            let node_big_minus_y_neg = Node::from_scalar(big_minus_y_neg);
+
+            match x.cmp(&y) {
+                Ordering::Greater => {
+                    prop_assert!(x_node > y_node);
+                    prop_assert!(node_big_minus_x_neg > node_big_minus_y_neg);
+                }
+                Ordering::Less => {
+                    prop_assert!(x_node < y_node);
+                    prop_assert!(node_big_minus_x_neg < node_big_minus_y_neg);
+                }
+                Ordering::Equal => {
+                    prop_assert!(x_node == y_node);
+                    prop_assert!(node_big_minus_x_neg == node_big_minus_y_neg);
+                }
+            }
         }
     }
 }
