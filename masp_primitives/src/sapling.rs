@@ -96,11 +96,22 @@ impl Node {
         Node { repr }
     }
 
+    /// Convert this node into its byte vector representation.
+    pub const fn into_repr(self) -> [u8; 32] {
+        self.repr
+    }
+
     /// Constructs a new note commitment tree node from a [`bls12_381::Scalar`]
     pub fn from_scalar(cmu: bls12_381::Scalar) -> Self {
         Self {
             repr: cmu.to_repr(),
         }
+    }
+}
+
+impl AsRef<[u8; 32]> for Node {
+    fn as_ref(&self) -> &[u8; 32] {
+        &self.repr
     }
 }
 
