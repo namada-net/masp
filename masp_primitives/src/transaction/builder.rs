@@ -525,7 +525,7 @@ mod tests {
     fn binding_sig_present_if_shielded_spend() {
         let mut rng = OsRng;
 
-        let transparent_address = TransparentAddress(rng.gen::<[u8; 20]>());
+        let transparent_address = TransparentAddress(rng.r#gen::<[u8; 20]>());
 
         let extsk = ExtendedSpendingKey::master(&[]);
         let dfvk = extsk.to_diversifiable_full_viewing_key();
@@ -571,7 +571,7 @@ mod tests {
     fn fails_on_negative_change() {
         let mut rng = OsRng;
 
-        let transparent_address = TransparentAddress(rng.gen::<[u8; 20]>());
+        let transparent_address = TransparentAddress(rng.r#gen::<[u8; 20]>());
         // Just use the master key as the ExtendedSpendingKey for this test
         let extsk = ExtendedSpendingKey::master(&[]);
         let tx_height = TEST_NETWORK

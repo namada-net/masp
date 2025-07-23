@@ -13,8 +13,8 @@ homepage = "https://github.com/namada-net/masp"
 repository = "https://github.com/namada-net/masp"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-edition = "2021"
-rust-version = "1.70"
+edition = "2024"
+rust-version = "1.85"
 categories = ["cryptography::cryptocurrencies"]
 
 [package.metadata.docs.rs]
