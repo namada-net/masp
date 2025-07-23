@@ -6,9 +6,9 @@
 use crate::transaction::components::sapling::read_point;
 
 use super::util::hash_to_scalar;
-use borsh::schema::add_definition;
 use borsh::schema::Definition;
 use borsh::schema::Fields;
+use borsh::schema::add_definition;
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use ff::{Field, PrimeField};
 use group::GroupEncoding;

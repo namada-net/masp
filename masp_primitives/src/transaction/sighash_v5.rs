@@ -1,10 +1,10 @@
 use blake2b_simd::Hash as Blake2bHash;
 
 use crate::transaction::{
+    Authorization, TransactionData, TransparentDigests, TxDigests,
     sighash::{SignableInput, TransparentAuthorizingContext},
     transparent,
     txid::{hash_transparent_txid_data, to_hash},
-    Authorization, TransactionData, TransparentDigests, TxDigests,
 };
 
 /// Implements [ZIP 244 section S.2](https://zips.z.cash/zip-0244#s-2-transparent-sig-digest).

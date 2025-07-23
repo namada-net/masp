@@ -1,7 +1,7 @@
 //! Consensus logic and parameters.
 
-use borsh::schema::add_definition;
 use borsh::schema::Definition;
+use borsh::schema::add_definition;
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use memuse::DynamicUsage;
 use std::cmp::{Ord, Ordering};
@@ -383,7 +383,7 @@ mod tests {
     use std::convert::TryFrom;
 
     use super::{
-        BlockHeight, BranchId, NetworkUpgrade, Parameters, MAIN_NETWORK, UPGRADES_IN_ORDER,
+        BlockHeight, BranchId, MAIN_NETWORK, NetworkUpgrade, Parameters, UPGRADES_IN_ORDER,
     };
 
     #[test]

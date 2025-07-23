@@ -5,12 +5,12 @@ use std::fmt;
 use crate::{
     asset_type::AssetType,
     transaction::{
+        TransparentAddress,
         components::{
-            amount::{I128Sum, ValueSum, MAX_MONEY},
-            transparent::{self, fees, Authorization, Authorized, Bundle, TxIn, TxOut},
+            amount::{I128Sum, MAX_MONEY, ValueSum},
+            transparent::{self, Authorization, Authorized, Bundle, TxIn, TxOut, fees},
         },
         sighash::TransparentAuthorizingContext,
-        TransparentAddress,
     },
 };
 use borsh::BorshSchema;

@@ -6,7 +6,7 @@ use std::sync::mpsc::Sender;
 use ff::Field;
 use ff::PrimeField;
 use group::GroupEncoding;
-use rand::{seq::SliceRandom, CryptoRng, RngCore};
+use rand::{CryptoRng, RngCore, seq::SliceRandom};
 
 use crate::MaybeArbitrary;
 use crate::{
@@ -17,29 +17,29 @@ use crate::{
     memo::MemoBytes,
     merkle_tree::MerklePath,
     sapling::{
+        Diversifier, Node, Note, PaymentAddress, ProofGenerationKey, Rseed,
         note_encryption::sapling_note_encryption,
         prover::TxProver,
         redjubjub::{PrivateKey, Signature},
         spend_sig_internal,
         util::generate_random_rseed_internal,
-        Diversifier, Node, Note, PaymentAddress, ProofGenerationKey, Rseed,
     },
     transaction::{
         builder::Progress,
         components::{
-            amount::{I128Sum, ValueSum, MAX_MONEY},
+            amount::{I128Sum, MAX_MONEY, ValueSum},
             sapling::{
-                fees, Authorization, Authorized, Bundle, ConvertDescription, GrothProofBytes,
-                OutputDescription, SpendDescription,
+                Authorization, Authorized, Bundle, ConvertDescription, GrothProofBytes,
+                OutputDescription, SpendDescription, fees,
             },
         },
     },
     zip32::{ExtendedKey, ExtendedSpendingKey},
 };
-use borsh::schema::add_definition;
 use borsh::schema::Declaration;
 use borsh::schema::Definition;
 use borsh::schema::Fields;
+use borsh::schema::add_definition;
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
@@ -792,9 +792,9 @@ impl<P, K> SaplingBuilder<P, K> {
 }
 
 impl<
-        P: consensus::Parameters,
-        K: ExtendedKey + Debug + Clone + PartialEq + for<'a> MaybeArbitrary<'a>,
-    > SaplingBuilder<P, K>
+    P: consensus::Parameters,
+    K: ExtendedKey + Debug + Clone + PartialEq + for<'a> MaybeArbitrary<'a>,
+> SaplingBuilder<P, K>
 {
     /// Adds a Sapling note to be spent in this transaction.
     ///
@@ -1286,18 +1286,18 @@ impl<P1, K1> SaplingBuilder<P1, K1> {
 pub mod testing {
     use proptest::collection::vec;
     use proptest::prelude::*;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
 
     use crate::{
         consensus::{
-            testing::{arb_branch_id, arb_height},
             TEST_NETWORK,
+            testing::{arb_branch_id, arb_height},
         },
-        merkle_tree::{testing::arb_commitment_tree, IncrementalWitness},
+        merkle_tree::{IncrementalWitness, testing::arb_commitment_tree},
         sapling::{
+            Diversifier,
             prover::mock::MockTxProver,
             testing::{arb_node, arb_note, arb_positive_note_value},
-            Diversifier,
         },
         transaction::components::{
             amount::MAX_MONEY,

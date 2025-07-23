@@ -8,11 +8,11 @@ use crate::{
     constants::{PROOF_GENERATION_KEY_GENERATOR, SPENDING_KEY_GENERATOR},
     keys::prf_expand,
 };
-use borsh::schema::add_definition;
+use borsh::BorshSchema;
 use borsh::schema::Declaration;
 use borsh::schema::Definition;
 use borsh::schema::Fields;
-use borsh::BorshSchema;
+use borsh::schema::add_definition;
 use borsh::{BorshDeserialize, BorshSerialize};
 use ff::PrimeField;
 use group::{Group, GroupEncoding};
@@ -264,8 +264,8 @@ pub mod testing {
     }
 
     use crate::sapling::PaymentAddress;
-    use crate::zip32::testing::arb_extended_spending_key;
     use crate::zip32::ExtendedFullViewingKey;
+    use crate::zip32::testing::arb_extended_spending_key;
 
     prop_compose! {
         pub fn arb_expanded_spending_key()(v in vec(any::<u8>(), 32..252)) -> ExpandedSpendingKey {

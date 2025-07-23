@@ -1,7 +1,7 @@
 use crate::{
     consensus::{self, BlockHeight},
     transaction::components::{
-        amount::{U64Sum, DEFAULT_FEE},
+        amount::{DEFAULT_FEE, U64Sum},
         transparent::fees as transparent,
     },
 };

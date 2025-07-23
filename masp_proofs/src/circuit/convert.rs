@@ -7,9 +7,9 @@ use masp_primitives::sapling::ValueCommitment;
 use super::pedersen_hash;
 use crate::circuit::sapling::expose_value_commitment;
 
+use bellman::gadgets::Assignment;
 use bellman::gadgets::boolean;
 use bellman::gadgets::num;
-use bellman::gadgets::Assignment;
 
 pub const TREE_DEPTH: usize = masp_primitives::sapling::SAPLING_COMMITMENT_TREE_DEPTH;
 
@@ -129,7 +129,7 @@ impl Circuit<bls12_381::Scalar> for Convert {
 #[test]
 fn test_convert_circuit_with_bls12_381() {
     use bellman::gadgets::test::*;
-    use group::{ff::Field, ff::PrimeField, ff::PrimeFieldBits, Curve};
+    use group::{Curve, ff::Field, ff::PrimeField, ff::PrimeFieldBits};
     use masp_primitives::{
         asset_type::AssetType, convert::AllowedConversion, sapling::pedersen_hash,
         transaction::components::ValueSum,

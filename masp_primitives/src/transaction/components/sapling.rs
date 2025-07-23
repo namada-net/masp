@@ -10,25 +10,24 @@ use std::hash::{Hash, Hasher};
 use std::io::{self, Read, Write};
 
 use masp_note_encryption::{
-    EphemeralKeyBytes, ShieldedOutput, COMPACT_NOTE_SIZE, ENC_CIPHERTEXT_SIZE,
+    COMPACT_NOTE_SIZE, ENC_CIPHERTEXT_SIZE, EphemeralKeyBytes, ShieldedOutput,
 };
 
-use borsh::schema::add_definition;
 use borsh::schema::Definition;
 use borsh::schema::Fields;
+use borsh::schema::add_definition;
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 
 use crate::{
-    consensus,
+    MaybeArbitrary, consensus,
     sapling::{
+        Nullifier,
         note_encryption::SaplingDomain,
         redjubjub::{self, PublicKey, Signature},
-        Nullifier,
     },
-    MaybeArbitrary,
 };
 
-use super::{amount::I128Sum, GROTH_PROOF_SIZE};
+use super::{GROTH_PROOF_SIZE, amount::I128Sum};
 
 pub type GrothProofBytes = [u8; GROTH_PROOF_SIZE];
 
@@ -623,17 +622,17 @@ pub mod testing {
     use group::{Group, GroupEncoding};
     use proptest::collection::vec;
     use proptest::prelude::*;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
 
     use crate::{
         constants::{SPENDING_KEY_GENERATOR, VALUE_COMMITMENT_RANDOMNESS_GENERATOR},
         sapling::{
-            redjubjub::{PrivateKey, PublicKey},
             Nullifier,
+            redjubjub::{PrivateKey, PublicKey},
         },
         transaction::{
-            components::{amount::testing::arb_i128_sum, GROTH_PROOF_SIZE},
             TxVersion,
+            components::{GROTH_PROOF_SIZE, amount::testing::arb_i128_sum},
         },
     };
 

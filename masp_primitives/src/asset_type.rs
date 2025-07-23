@@ -8,7 +8,7 @@ use crate::{
 use blake2s_simd::Params as Blake2sParams;
 use borsh::BorshSchema;
 use borsh::{BorshDeserialize, BorshSerialize};
-use group::{cofactor::CofactorGroup, Group, GroupEncoding};
+use group::{Group, GroupEncoding, cofactor::CofactorGroup};
 use std::{
     cmp::Ordering,
     fmt::{Display, Formatter},

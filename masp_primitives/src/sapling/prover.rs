@@ -5,10 +5,10 @@ use crate::{
     convert::AllowedConversion,
     merkle_tree::MerklePath,
     sapling::{
-        redjubjub::{PublicKey, Signature},
         Node,
+        redjubjub::{PublicKey, Signature},
     },
-    transaction::components::{I128Sum, GROTH_PROOF_SIZE},
+    transaction::components::{GROTH_PROOF_SIZE, I128Sum},
 };
 
 use super::{Diversifier, PaymentAddress, ProofGenerationKey, Rseed};
@@ -90,10 +90,10 @@ pub mod mock {
         convert::AllowedConversion,
         merkle_tree::MerklePath,
         sapling::{
-            redjubjub::{PublicKey, Signature},
             Diversifier, Node, PaymentAddress, ProofGenerationKey, Rseed,
+            redjubjub::{PublicKey, Signature},
         },
-        transaction::components::{I128Sum, GROTH_PROOF_SIZE},
+        transaction::components::{GROTH_PROOF_SIZE, I128Sum},
     };
 
     use super::TxProver;

@@ -107,7 +107,7 @@ mod test {
     use super::*;
     use bellman::gadgets::boolean::{AllocatedBit, Boolean};
     use bellman::gadgets::test::*;
-    use group::{ff::PrimeField, Curve};
+    use group::{Curve, ff::PrimeField};
     use masp_primitives::sapling::pedersen_hash;
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;

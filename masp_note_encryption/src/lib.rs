@@ -28,10 +28,10 @@ use alloc::vec::Vec;
 use core::convert::TryInto;
 
 use chacha20::{
-    cipher::{StreamCipher, StreamCipherSeek},
     ChaCha20,
+    cipher::{StreamCipher, StreamCipherSeek},
 };
-use chacha20poly1305::{aead::AeadInPlace, ChaCha20Poly1305, KeyInit};
+use chacha20poly1305::{ChaCha20Poly1305, KeyInit, aead::AeadInPlace};
 use cipher::KeyIvInit;
 
 //use crate::constants::ASSET_IDENTIFIER_LENGTH;

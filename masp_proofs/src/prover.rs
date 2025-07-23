@@ -7,11 +7,11 @@ use masp_primitives::{
     convert::AllowedConversion,
     merkle_tree::MerklePath,
     sapling::{
+        Diversifier, Node, PaymentAddress, ProofGenerationKey, Rseed,
         prover::TxProver,
         redjubjub::{PublicKey, Signature},
-        Diversifier, Node, PaymentAddress, ProofGenerationKey, Rseed,
     },
-    transaction::components::{I128Sum, GROTH_PROOF_SIZE},
+    transaction::components::{GROTH_PROOF_SIZE, I128Sum},
 };
 use std::path::Path;
 
@@ -19,7 +19,7 @@ use crate::{parse_parameters, sapling::SaplingProvingContext};
 
 #[cfg(feature = "local-prover")]
 use crate::{
-    default_params_folder, load_parameters, MASP_CONVERT_NAME, MASP_OUTPUT_NAME, MASP_SPEND_NAME,
+    MASP_CONVERT_NAME, MASP_OUTPUT_NAME, MASP_SPEND_NAME, default_params_folder, load_parameters,
 };
 
 /// An implementation of [`TxProver`] using Sapling Spend and Output parameters from

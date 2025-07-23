@@ -1,15 +1,15 @@
 use crate::{
     sapling::{
-        pedersen_hash::{pedersen_hash, Personalization},
         Node, ValueCommitment,
+        pedersen_hash::{Personalization, pedersen_hash},
     },
     transaction::components::amount::{I128Sum, ValueSum},
 };
-use borsh::schema::add_definition;
+use borsh::BorshSchema;
 use borsh::schema::Declaration;
 use borsh::schema::Definition;
 use borsh::schema::Fields;
-use borsh::BorshSchema;
+use borsh::schema::add_definition;
 use borsh::{BorshDeserialize, BorshSerialize};
 use group::{Curve, GroupEncoding};
 use std::collections::BTreeMap;

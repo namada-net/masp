@@ -4,16 +4,16 @@ use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use std::fmt::{self, Debug};
 use std::io::{self, Read, Write};
 
+use crate::MaybeArbitrary;
 use crate::asset_type::AssetType;
 use crate::transaction::TransparentAddress;
-use crate::MaybeArbitrary;
-use borsh::schema::add_definition;
 use borsh::schema::Declaration;
 use borsh::schema::Definition;
 use borsh::schema::Fields;
+use borsh::schema::add_definition;
 use std::collections::BTreeMap;
 
-use super::amount::{BalanceError, I128Sum, ValueSum, MAX_MONEY};
+use super::amount::{BalanceError, I128Sum, MAX_MONEY, ValueSum};
 
 pub mod builder;
 pub mod fees;
@@ -271,8 +271,8 @@ pub mod testing {
     use proptest::collection::vec;
     use proptest::prelude::*;
 
-    use crate::transaction::components::amount::testing::arb_nonnegative_amount;
     use crate::transaction::TransparentAddress;
+    use crate::transaction::components::amount::testing::arb_nonnegative_amount;
 
     use super::{Authorized, Bundle, TxIn, TxOut};
 

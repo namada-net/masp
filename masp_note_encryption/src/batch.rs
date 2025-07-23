@@ -3,8 +3,8 @@
 use alloc::vec::Vec; // module is alloc only
 
 use crate::{
-    try_compact_note_decryption_inner, try_note_decryption_inner, BatchDomain, EphemeralKeyBytes,
-    ShieldedOutput, COMPACT_NOTE_SIZE, ENC_CIPHERTEXT_SIZE,
+    BatchDomain, COMPACT_NOTE_SIZE, ENC_CIPHERTEXT_SIZE, EphemeralKeyBytes, ShieldedOutput,
+    try_compact_note_decryption_inner, try_note_decryption_inner,
 };
 
 /// Trial decryption of a batch of notes with a set of recipients.

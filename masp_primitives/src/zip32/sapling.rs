@@ -12,15 +12,15 @@ use crate::{
     constants::{PROOF_GENERATION_KEY_GENERATOR, SPENDING_KEY_GENERATOR},
     keys::{prf_expand, prf_expand_vec},
     sapling::keys::{DecodingError, ExpandedSpendingKey, FullViewingKey, OutgoingViewingKey},
-    sapling::{redjubjub::PrivateKey, ProofGenerationKey, SaplingIvk},
+    sapling::{ProofGenerationKey, SaplingIvk, redjubjub::PrivateKey},
 };
 use aes::Aes256;
 use blake2b_simd::Params as Blake2bParams;
-use borsh::schema::add_definition;
+use borsh::BorshSchema;
 use borsh::schema::Declaration;
 use borsh::schema::Definition;
 use borsh::schema::Fields;
-use borsh::BorshSchema;
+use borsh::schema::add_definition;
 use borsh::{BorshDeserialize, BorshSerialize};
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
 use ff::PrimeField;

@@ -13,7 +13,7 @@ use blake2s_simd::Params as Blake2sParams;
 use borsh::{BorshDeserialize, BorshSerialize};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ff::{Field, PrimeField};
-use group::{cofactor::CofactorGroup, Curve, Group, GroupEncoding};
+use group::{Curve, Group, GroupEncoding, cofactor::CofactorGroup};
 use incrementalmerkletree::{self, Altitude};
 use lazy_static::lazy_static;
 use rand_core::{CryptoRng, RngCore};
@@ -38,14 +38,14 @@ use crate::{
 
 use self::{
     group_hash::group_hash,
-    pedersen_hash::{pedersen_hash, Personalization},
+    pedersen_hash::{Personalization, pedersen_hash},
     redjubjub::{PrivateKey, PublicKey, Signature},
 };
-use borsh::schema::add_definition;
+use borsh::BorshSchema;
 use borsh::schema::Declaration;
 use borsh::schema::Definition;
 use borsh::schema::Fields;
-use borsh::BorshSchema;
+use borsh::schema::add_definition;
 use std::collections::BTreeMap;
 
 pub const SAPLING_COMMITMENT_TREE_DEPTH: usize = 32;
@@ -954,8 +954,8 @@ pub mod testing {
     use crate::transaction::components::amount::MAX_MONEY;
 
     use super::{
-        keys::testing::arb_full_viewing_key, Diversifier, Node, Note, NoteValue, PaymentAddress,
-        Rseed, SaplingIvk,
+        Diversifier, Node, Note, NoteValue, PaymentAddress, Rseed, SaplingIvk,
+        keys::testing::arb_full_viewing_key,
     };
 
     prop_compose! {
@@ -1016,8 +1016,8 @@ pub mod testing {
 #[cfg(test)]
 mod tests {
     use crate::{
-        sapling::testing::{arb_note, arb_positive_note_value},
         sapling::Note,
+        sapling::testing::{arb_note, arb_positive_note_value},
         transaction::components::amount::MAX_MONEY,
     };
     use borsh::BorshDeserialize;

@@ -1,14 +1,14 @@
 use crate::asset_type::AssetType;
-use borsh::schema::add_definition;
-use borsh::schema::Fields;
-use borsh::schema::{Declaration, Definition};
 use borsh::BorshSchema;
+use borsh::schema::Fields;
+use borsh::schema::add_definition;
+use borsh::schema::{Declaration, Definition};
 use borsh::{BorshDeserialize, BorshSerialize};
 use num_traits::{CheckedAdd, CheckedMul, CheckedNeg, CheckedSub, ConstZero, One, Zero};
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::collections::btree_map::Keys;
 use std::collections::btree_map::{IntoIter, Iter};
-use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::io::{Read, Write};
 use std::iter::Sum;
@@ -848,7 +848,7 @@ pub fn default_fee() -> ValueSum<AssetType, i64> {
 pub mod testing {
     use proptest::prelude::prop_compose;
 
-    use super::{I128Sum, I64Sum, U64Sum, ValueSum, MAX_MONEY};
+    use super::{I64Sum, I128Sum, MAX_MONEY, U64Sum, ValueSum};
     use crate::asset_type::testing::arb_asset_type;
 
     prop_compose! {
@@ -878,7 +878,7 @@ pub mod testing {
 
 #[cfg(test)]
 mod tests {
-    use super::{zec, I128Sum, I32Sum, I64Sum, ValueSum, MAX_MONEY};
+    use super::{I32Sum, I64Sum, I128Sum, MAX_MONEY, ValueSum, zec};
 
     #[test]
     fn amount_in_range() {
