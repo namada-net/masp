@@ -9,8 +9,8 @@ authors = [
     "Murisi Tarusenga <murisi@heliax.dev>",
     "Heliax AG <hello@heliax.dev>",
 ]
-homepage = "https://github.com/anoma/masp"
-repository = "https://github.com/anoma/masp"
+homepage = "https://github.com/namada-net/masp"
+repository = "https://github.com/namada-net/masp"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 edition = "2021"

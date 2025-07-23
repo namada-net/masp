@@ -7,8 +7,8 @@ authors = [
     "Kris Nuttycombe <kris@electriccoin.co>",
     "joe@heliax.dev",
 ]
-homepage = "https://github.com/anoma/masp"
-repository = "https://github.com/anoma/masp"
+homepage = "https://github.com/namada-net/masp"
+repository = "https://github.com/namada-net/masp"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 edition = "2021"
