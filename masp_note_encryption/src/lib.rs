@@ -363,7 +363,6 @@ pub trait ShieldedOutput<D: Domain, const CIPHERTEXT_SIZE: usize> {
 ///
 /// Implements section 4.19 of the
 /// [Zcash Protocol Specification](https://zips.z.cash/protocol/nu5.pdf#saplingandorchardinband)
-
 pub struct NoteEncryption<D: Domain> {
     epk: D::EphemeralPublicKey,
     esk: D::EphemeralSecretKey,

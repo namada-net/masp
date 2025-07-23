@@ -543,7 +543,7 @@ impl BorshSerialize for ExtendedSpendingKey {
     }
 }
 
-impl<'a> From<&'a ExtendedSpendingKey> for ExtendedFullViewingKey {
+impl From<&ExtendedSpendingKey> for ExtendedFullViewingKey {
     fn from(xsk: &ExtendedSpendingKey) -> Self {
         ExtendedFullViewingKey {
             depth: xsk.depth,

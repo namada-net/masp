@@ -194,11 +194,11 @@ impl TransparentAuthorizingContext for Unauthorized {
 #[cfg(feature = "transparent-inputs")]
 impl TransparentAuthorizingContext for Unauthorized {
     fn input_amounts(&self) -> Vec<(AssetType, u64)> {
-        return self
+        self
             .inputs
             .iter()
             .map(|txin| (txin.coin.asset_type, txin.coin.value))
-            .collect();
+            .collect()
     }
 }
 

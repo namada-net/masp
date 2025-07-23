@@ -19,17 +19,6 @@ pub const MAX_MONEY: u64 = u64::MAX;
 lazy_static::lazy_static! {
 pub static ref DEFAULT_FEE: U64Sum = ValueSum::from_pair(zec(), 1000);
 }
-/// A type-safe representation of some quantity of Zcash.
-///
-/// An ValueSum can only be constructed from an integer that is within the valid monetary
-/// range of `{-MAX_MONEY..MAX_MONEY}` (where `MAX_MONEY` = i64::MAX).
-/// However, this range is not preserved as an invariant internally; it is possible to
-/// add two valid ValueSums together to obtain an invalid ValueSum. It is the user's
-/// responsibility to handle the result of serializing potentially-invalid ValueSums. In
-/// particular, a `Transaction` containing serialized invalid ValueSums will be rejected
-/// by the network consensus rules.
-///
-
 pub type I8Sum = ValueSum<AssetType, i8>;
 
 pub type U8Sum = ValueSum<AssetType, u8>;
@@ -50,6 +39,15 @@ pub type I128Sum = ValueSum<AssetType, i128>;
 
 pub type U128Sum = ValueSum<AssetType, u128>;
 
+/// A type-safe representation of some quantity of Zcash.
+///
+/// An ValueSum can only be constructed from an integer that is within the valid monetary
+/// range of `{-MAX_MONEY..MAX_MONEY}` (where `MAX_MONEY` = i64::MAX).
+/// However, this range is not preserved as an invariant internally; it is possible to
+/// add two valid ValueSums together to obtain an invalid ValueSum. It is the user's
+/// responsibility to handle the result of serializing potentially-invalid ValueSums. In
+/// particular, a `Transaction` containing serialized invalid ValueSums will be rejected
+/// by the network consensus rules.
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[derive(Clone, Default, Debug, PartialEq, Eq, Hash)]
 pub struct ValueSum<
