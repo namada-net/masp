@@ -5,12 +5,12 @@ use std::fmt;
 use crate::{
     asset_type::AssetType,
     transaction::{
+        TransparentAddress,
         components::{
-            amount::{I128Sum, ValueSum, MAX_MONEY},
-            transparent::{self, fees, Authorization, Authorized, Bundle, TxIn, TxOut},
+            amount::{I128Sum, MAX_MONEY, ValueSum},
+            transparent::{self, Authorization, Authorized, Bundle, TxIn, TxOut, fees},
         },
         sighash::TransparentAuthorizingContext,
-        TransparentAddress,
     },
 };
 use borsh::BorshSchema;
@@ -194,11 +194,10 @@ impl TransparentAuthorizingContext for Unauthorized {
 #[cfg(feature = "transparent-inputs")]
 impl TransparentAuthorizingContext for Unauthorized {
     fn input_amounts(&self) -> Vec<(AssetType, u64)> {
-        return self
-            .inputs
+        self.inputs
             .iter()
             .map(|txin| (txin.coin.asset_type, txin.coin.value))
-            .collect();
+            .collect()
     }
 }
 

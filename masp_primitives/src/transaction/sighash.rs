@@ -3,12 +3,12 @@ use std::convert::TryInto;
 use blake2b_simd::Hash as Blake2bHash;
 
 use super::{
+    Authorization, TransactionData, TxDigests, TxVersion,
     components::{
         sapling::{self, GrothProofBytes},
         transparent,
     },
     sighash_v5::v5_signature_hash,
-    Authorization, TransactionData, TxDigests, TxVersion,
 };
 
 use crate::asset_type::AssetType;

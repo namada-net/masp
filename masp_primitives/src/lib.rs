@@ -39,10 +39,10 @@ mod test_vectors;
 pub trait MaybeArbitrary<'a> {}
 
 #[cfg(not(feature = "arbitrary"))]
-impl<'a, T> MaybeArbitrary<'a> for T {}
+impl<T> MaybeArbitrary<'_> for T {}
 
 #[cfg(feature = "arbitrary")]
 pub trait MaybeArbitrary<'a>: arbitrary::Arbitrary<'a> {}
 
 #[cfg(feature = "arbitrary")]
-impl<'a, T: for<'b> arbitrary::Arbitrary<'b>> MaybeArbitrary<'a> for T {}
+impl<T: for<'b> arbitrary::Arbitrary<'b>> MaybeArbitrary<'_> for T {}

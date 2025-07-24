@@ -2,24 +2,24 @@
 use blake2b_simd::{Hash as Blake2bHash, Params as Blake2bParams};
 use byteorder::{LittleEndian, WriteBytesExt};
 use ff::PrimeField;
-use group::{cofactor::CofactorGroup, GroupEncoding, WnafBase, WnafScalar};
+use group::{GroupEncoding, WnafBase, WnafScalar, cofactor::CofactorGroup};
 use jubjub::{AffinePoint, ExtendedPoint};
 use memuse::DynamicUsage;
 use std::convert::TryInto;
 
 use crate::asset_type::AssetType;
 use masp_note_encryption::{
-    try_compact_note_decryption, try_note_decryption, try_output_recovery_with_ock,
-    try_output_recovery_with_ovk, BatchDomain, Domain, EphemeralKeyBytes, NoteEncryption,
-    NotePlaintextBytes, OutPlaintextBytes, OutgoingCipherKey, ShieldedOutput, COMPACT_NOTE_SIZE,
-    ENC_CIPHERTEXT_SIZE, NOTE_PLAINTEXT_SIZE, OUT_PLAINTEXT_SIZE,
+    BatchDomain, COMPACT_NOTE_SIZE, Domain, ENC_CIPHERTEXT_SIZE, EphemeralKeyBytes,
+    NOTE_PLAINTEXT_SIZE, NoteEncryption, NotePlaintextBytes, OUT_PLAINTEXT_SIZE, OutPlaintextBytes,
+    OutgoingCipherKey, ShieldedOutput, try_compact_note_decryption, try_note_decryption,
+    try_output_recovery_with_ock, try_output_recovery_with_ovk,
 };
 
 use crate::{
     consensus::{self, BlockHeight, NetworkUpgrade::MASP},
     memo::MemoBytes,
-    sapling::{keys::OutgoingViewingKey, Diversifier, Note, PaymentAddress, Rseed, SaplingIvk},
-    transaction::{components::sapling::OutputDescription, GrothProofBytes},
+    sapling::{Diversifier, Note, PaymentAddress, Rseed, SaplingIvk, keys::OutgoingViewingKey},
+    transaction::{GrothProofBytes, components::sapling::OutputDescription},
 };
 
 pub const KDF_SAPLING_PERSONALIZATION: &[u8; 16] = b"MASP__SaplingKDF";
@@ -554,42 +554,42 @@ pub fn try_sapling_output_recovery<P: consensus::Parameters>(
 #[cfg(test)]
 mod tests {
     use chacha20poly1305::{
-        aead::{AeadInPlace, KeyInit},
         ChaCha20Poly1305,
+        aead::{AeadInPlace, KeyInit},
     };
     use ff::{Field, PrimeField};
     use group::Group;
-    use group::{cofactor::CofactorGroup, GroupEncoding};
+    use group::{GroupEncoding, cofactor::CofactorGroup};
     use rand_core::OsRng;
     use rand_core::{CryptoRng, RngCore};
     use std::convert::TryInto;
 
     use masp_note_encryption::{
-        batch, EphemeralKeyBytes, NoteEncryption, OutgoingCipherKey, ENC_CIPHERTEXT_SIZE,
-        NOTE_PLAINTEXT_SIZE, OUT_CIPHERTEXT_SIZE, OUT_PLAINTEXT_SIZE,
+        ENC_CIPHERTEXT_SIZE, EphemeralKeyBytes, NOTE_PLAINTEXT_SIZE, NoteEncryption,
+        OUT_CIPHERTEXT_SIZE, OUT_PLAINTEXT_SIZE, OutgoingCipherKey, batch,
     };
 
     use super::{
-        epk_bytes, kdf_sapling, prf_ock, sapling_ka_agree, sapling_note_encryption,
+        SaplingDomain, epk_bytes, kdf_sapling, prf_ock, sapling_ka_agree, sapling_note_encryption,
         try_sapling_compact_note_decryption, try_sapling_note_decryption,
-        try_sapling_output_recovery, try_sapling_output_recovery_with_ock, SaplingDomain,
+        try_sapling_output_recovery, try_sapling_output_recovery_with_ock,
     };
 
     use crate::{
         consensus::{
-            BlockHeight, NetworkUpgrade::MASP, Parameters, TestNetwork, TEST_NETWORK,
+            BlockHeight, NetworkUpgrade::MASP, Parameters, TEST_NETWORK, TestNetwork,
             ZIP212_GRACE_PERIOD,
         },
         keys::OutgoingViewingKey,
         memo::MemoBytes,
+        sapling::{Diversifier, PaymentAddress, Rseed, SaplingIvk},
         sapling::{
             note_encryption::{AssetType, PreparedIncomingViewingKey},
             util::generate_random_rseed,
         },
-        sapling::{Diversifier, PaymentAddress, Rseed, SaplingIvk},
         transaction::components::{
-            sapling::{self, CompactOutputDescription, OutputDescription},
             GROTH_PROOF_SIZE,
+            sapling::{self, CompactOutputDescription, OutputDescription},
         },
     };
 
@@ -610,13 +610,15 @@ mod tests {
         assert!(
             try_sapling_note_decryption(&TEST_NETWORK, height, &prepared_ivk, &output).is_some()
         );
-        assert!(try_sapling_compact_note_decryption(
-            &TEST_NETWORK,
-            height,
-            &prepared_ivk,
-            &CompactOutputDescription::from(output.clone()),
-        )
-        .is_some());
+        assert!(
+            try_sapling_compact_note_decryption(
+                &TEST_NETWORK,
+                height,
+                &prepared_ivk,
+                &CompactOutputDescription::from(output.clone()),
+            )
+            .is_some()
+        );
 
         let ovk_output_recovery = try_sapling_output_recovery(&TEST_NETWORK, height, &ovk, &output);
 
@@ -1307,15 +1309,11 @@ mod tests {
         let test_vectors = crate::test_vectors::note_encryption::make_test_vectors();
 
         macro_rules! read_bls12_381_scalar {
-            ($field:expr) => {{
-                bls12_381::Scalar::from_repr($field[..].try_into().unwrap()).unwrap()
-            }};
+            ($field:expr) => {{ bls12_381::Scalar::from_repr($field[..].try_into().unwrap()).unwrap() }};
         }
 
         macro_rules! read_jubjub_scalar {
-            ($field:expr) => {{
-                jubjub::Fr::from_repr($field[..].try_into().unwrap()).unwrap()
-            }};
+            ($field:expr) => {{ jubjub::Fr::from_repr($field[..].try_into().unwrap()).unwrap() }};
         }
 
         macro_rules! read_point {

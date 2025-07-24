@@ -5,7 +5,7 @@ pub mod sapling;
 pub mod transparent;
 pub use self::{
     amount::{
-        I128Sum, I16Sum, I32Sum, I64Sum, I8Sum, U128Sum, U16Sum, U32Sum, U64Sum, U8Sum, ValueSum,
+        I8Sum, I16Sum, I32Sum, I64Sum, I128Sum, U8Sum, U16Sum, U32Sum, U64Sum, U128Sum, ValueSum,
     },
     sapling::{ConvertDescription, OutputDescription, SpendDescription},
     transparent::{TxIn, TxOut},

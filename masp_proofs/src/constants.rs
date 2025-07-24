@@ -1,7 +1,7 @@
 //! Various constants used for the MASP proofs.
 
 use bls12_381::Scalar;
-use group::{ff::Field, Curve, Group};
+use group::{Curve, Group, ff::Field};
 use jubjub::ExtendedPoint;
 use lazy_static::lazy_static;
 use masp_primitives::constants::{PEDERSEN_HASH_CHUNKS_PER_GENERATOR, PEDERSEN_HASH_GENERATORS};
@@ -64,21 +64,21 @@ lazy_static! {
 
 /// Creates the 3-bit window table `[0, 1, ..., 8]` for different magnitudes of a fixed
 /// generator.
-pub fn generate_circuit_generator(mut gen: jubjub::SubgroupPoint) -> FixedGeneratorOwned {
+pub fn generate_circuit_generator(mut r#gen: jubjub::SubgroupPoint) -> FixedGeneratorOwned {
     let mut windows = vec![];
 
     for _ in 0..FIXED_BASE_CHUNKS_PER_GENERATOR {
         let mut coeffs = vec![(Scalar::zero(), Scalar::one())];
-        let mut g = gen;
+        let mut g = r#gen;
         for _ in 0..7 {
             let g_affine = jubjub::ExtendedPoint::from(g).to_affine();
             coeffs.push((g_affine.get_u(), g_affine.get_v()));
-            g += gen;
+            g += r#gen;
         }
         windows.push(coeffs);
 
-        // gen = gen * 8
-        gen = g;
+        // r#gen = r#gen * 8
+        r#gen = g;
     }
 
     windows
@@ -134,13 +134,13 @@ fn generate_pedersen_circuit_generators() -> Vec<Vec<Vec<(Scalar, Scalar)>>> {
     PEDERSEN_HASH_GENERATORS
         .iter()
         .cloned()
-        .map(|mut gen| {
+        .map(|mut r#gen| {
             let mut windows = vec![];
 
             for _ in 0..PEDERSEN_HASH_CHUNKS_PER_GENERATOR {
                 // Create (x, y) coeffs for this chunk
                 let mut coeffs = vec![];
-                let mut g = gen;
+                let mut g = r#gen;
 
                 // coeffs = g, g*2, g*3, g*4
                 for _ in 0..4 {
@@ -148,13 +148,13 @@ fn generate_pedersen_circuit_generators() -> Vec<Vec<Vec<(Scalar, Scalar)>>> {
                         to_montgomery_coords(g.into())
                             .expect("we never encounter the point at infinity"),
                     );
-                    g += gen;
+                    g += r#gen;
                 }
                 windows.push(coeffs);
 
                 // Our chunks are separated by 2 bits to prevent overlap.
                 for _ in 0..4 {
-                    gen = gen.double();
+                    r#gen = r#gen.double();
                 }
             }
 

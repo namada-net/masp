@@ -32,11 +32,11 @@ use self::{
         },
         transparent::{self, TxIn, TxOut},
     },
-    txid::{to_txid, BlockTxCommitmentDigester, TxIdDigester},
+    txid::{BlockTxCommitmentDigester, TxIdDigester, to_txid},
 };
 use crate::MaybeArbitrary;
-use borsh::schema::add_definition;
 use borsh::schema::Fields;
+use borsh::schema::add_definition;
 use borsh::schema::{Declaration, Definition};
 use std::marker::PhantomData;
 use std::ops::RangeInclusive;
@@ -869,11 +869,11 @@ pub mod testing {
     use crate::consensus::BranchId;
 
     use super::{
+        Authorized, Transaction, TransactionData, TxId, TxVersion,
         components::{
             sapling::testing::{self as sapling},
             transparent::testing::{self as transparent},
         },
-        Authorized, Transaction, TransactionData, TxId, TxVersion,
     };
 
     pub fn arb_txid() -> impl Strategy<Value = TxId> {

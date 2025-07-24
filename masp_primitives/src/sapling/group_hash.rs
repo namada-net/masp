@@ -3,7 +3,7 @@
 //! [grouphash]: https://zips.z.cash/protocol/protocol.pdf#concretegrouphashjubjub
 
 use ff::PrimeField;
-use group::{cofactor::CofactorGroup, Group, GroupEncoding};
+use group::{Group, GroupEncoding, cofactor::CofactorGroup};
 
 use crate::constants;
 use blake2s_simd::Params;

@@ -1,6 +1,6 @@
 use bellman::{
     gadgets::multipack,
-    groth16::{create_random_proof, verify_proof, Parameters, PreparedVerifyingKey, Proof},
+    groth16::{Parameters, PreparedVerifyingKey, Proof, create_random_proof, verify_proof},
 };
 use bls12_381::Bls12;
 use group::{Curve, GroupEncoding};
@@ -10,8 +10,8 @@ use masp_primitives::{
     convert::AllowedConversion,
     merkle_tree::MerklePath,
     sapling::{
-        redjubjub::{PrivateKey, PublicKey, Signature},
         Diversifier, Node, Note, PaymentAddress, ProofGenerationKey, Rseed,
+        redjubjub::{PrivateKey, PublicKey, Signature},
     },
     transaction::components::I128Sum,
 };

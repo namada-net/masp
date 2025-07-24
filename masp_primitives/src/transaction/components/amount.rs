@@ -1,14 +1,14 @@
 use crate::asset_type::AssetType;
-use borsh::schema::add_definition;
-use borsh::schema::Fields;
-use borsh::schema::{Declaration, Definition};
 use borsh::BorshSchema;
+use borsh::schema::Fields;
+use borsh::schema::add_definition;
+use borsh::schema::{Declaration, Definition};
 use borsh::{BorshDeserialize, BorshSerialize};
 use num_traits::{CheckedAdd, CheckedMul, CheckedNeg, CheckedSub, ConstZero, One, Zero};
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::collections::btree_map::Keys;
 use std::collections::btree_map::{IntoIter, Iter};
-use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::io::{Read, Write};
 use std::iter::Sum;
@@ -19,17 +19,6 @@ pub const MAX_MONEY: u64 = u64::MAX;
 lazy_static::lazy_static! {
 pub static ref DEFAULT_FEE: U64Sum = ValueSum::from_pair(zec(), 1000);
 }
-/// A type-safe representation of some quantity of Zcash.
-///
-/// An ValueSum can only be constructed from an integer that is within the valid monetary
-/// range of `{-MAX_MONEY..MAX_MONEY}` (where `MAX_MONEY` = i64::MAX).
-/// However, this range is not preserved as an invariant internally; it is possible to
-/// add two valid ValueSums together to obtain an invalid ValueSum. It is the user's
-/// responsibility to handle the result of serializing potentially-invalid ValueSums. In
-/// particular, a `Transaction` containing serialized invalid ValueSums will be rejected
-/// by the network consensus rules.
-///
-
 pub type I8Sum = ValueSum<AssetType, i8>;
 
 pub type U8Sum = ValueSum<AssetType, u8>;
@@ -50,6 +39,15 @@ pub type I128Sum = ValueSum<AssetType, i128>;
 
 pub type U128Sum = ValueSum<AssetType, u128>;
 
+/// A type-safe representation of some quantity of Zcash.
+///
+/// An ValueSum can only be constructed from an integer that is within the valid monetary
+/// range of `{-MAX_MONEY..MAX_MONEY}` (where `MAX_MONEY` = i64::MAX).
+/// However, this range is not preserved as an invariant internally; it is possible to
+/// add two valid ValueSums together to obtain an invalid ValueSum. It is the user's
+/// responsibility to handle the result of serializing potentially-invalid ValueSums. In
+/// particular, a `Transaction` containing serialized invalid ValueSums will be rejected
+/// by the network consensus rules.
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[derive(Clone, Default, Debug, PartialEq, Eq, Hash)]
 pub struct ValueSum<
@@ -848,7 +846,7 @@ pub fn default_fee() -> ValueSum<AssetType, i64> {
 pub mod testing {
     use proptest::prelude::prop_compose;
 
-    use super::{I128Sum, I64Sum, U64Sum, ValueSum, MAX_MONEY};
+    use super::{I64Sum, I128Sum, MAX_MONEY, U64Sum, ValueSum};
     use crate::asset_type::testing::arb_asset_type;
 
     prop_compose! {
@@ -878,7 +876,7 @@ pub mod testing {
 
 #[cfg(test)]
 mod tests {
-    use super::{zec, I128Sum, I32Sum, I64Sum, ValueSum, MAX_MONEY};
+    use super::{I32Sum, I64Sum, I128Sum, MAX_MONEY, ValueSum, zec};
 
     #[test]
     fn amount_in_range() {

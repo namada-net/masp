@@ -9,16 +9,18 @@ use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use rand::{CryptoRng, RngCore};
 
 use crate::{
+    MaybeArbitrary,
     asset_type::AssetType,
     consensus::{self, BlockHeight, BranchId},
     convert::AllowedConversion,
     keys::OutgoingViewingKey,
     memo::MemoBytes,
     merkle_tree::MerklePath,
-    sapling::{prover::TxProver, Diversifier, Node, Note, PaymentAddress},
+    sapling::{Diversifier, Node, Note, PaymentAddress, prover::TxProver},
     transaction::{
+        Transaction, TransactionData, TransparentAddress, TxVersion, Unauthorized,
         components::{
-            amount::{BalanceError, I128Sum, U64Sum, ValueSum, MAX_MONEY},
+            amount::{BalanceError, I128Sum, MAX_MONEY, U64Sum, ValueSum},
             sapling::{
                 self,
                 builder::{BuildParams, SaplingBuilder, SaplingMetadata},
@@ -26,12 +28,10 @@ use crate::{
             transparent::{self, builder::TransparentBuilder},
         },
         fees::FeeRule,
-        sighash::{signature_hash, SignableInput},
+        sighash::{SignableInput, signature_hash},
         txid::TxIdDigester,
-        Transaction, TransactionData, TransparentAddress, TxVersion, Unauthorized,
     },
     zip32::{ExtendedKey, ExtendedSpendingKey},
-    MaybeArbitrary,
 };
 
 #[cfg(feature = "transparent-inputs")]
@@ -170,9 +170,9 @@ impl<P, K, N> Builder<P, K, N> {
 }
 
 impl<
-        P: consensus::Parameters,
-        K: ExtendedKey + std::fmt::Debug + Clone + PartialEq + for<'a> MaybeArbitrary<'a>,
-    > Builder<P, K>
+    P: consensus::Parameters,
+    K: ExtendedKey + std::fmt::Debug + Clone + PartialEq + for<'a> MaybeArbitrary<'a>,
+> Builder<P, K>
 {
     /// Creates a new `Builder` targeted for inclusion in the block with the given height,
     /// using default values for general transaction fields and the default OS random.
@@ -187,9 +187,9 @@ impl<
 }
 
 impl<
-        P: consensus::Parameters,
-        K: ExtendedKey + std::fmt::Debug + Clone + PartialEq + for<'a> MaybeArbitrary<'a>,
-    > Builder<P, K>
+    P: consensus::Parameters,
+    K: ExtendedKey + std::fmt::Debug + Clone + PartialEq + for<'a> MaybeArbitrary<'a>,
+> Builder<P, K>
 {
     /// Common utility function for builder construction.
     ///
@@ -443,7 +443,7 @@ mod testing {
     use crate::{
         consensus::{self, BlockHeight},
         sapling::prover::mock::MockTxProver,
-        transaction::{builder::BuildParams, fees::fixed, Transaction},
+        transaction::{Transaction, builder::BuildParams, fees::fixed},
     };
 
     impl<P: consensus::Parameters> Builder<P> {
@@ -483,9 +483,9 @@ mod tests {
         merkle_tree::{CommitmentTree, IncrementalWitness},
         sapling::Rseed,
         transaction::{
-            components::amount::{I128Sum, ValueSum, DEFAULT_FEE},
-            sapling::builder as build_s,
             TransparentAddress,
+            components::amount::{DEFAULT_FEE, I128Sum, ValueSum},
+            sapling::builder as build_s,
         },
         zip32::ExtendedSpendingKey,
     };
@@ -525,7 +525,7 @@ mod tests {
     fn binding_sig_present_if_shielded_spend() {
         let mut rng = OsRng;
 
-        let transparent_address = TransparentAddress(rng.gen::<[u8; 20]>());
+        let transparent_address = TransparentAddress(rng.r#gen::<[u8; 20]>());
 
         let extsk = ExtendedSpendingKey::master(&[]);
         let dfvk = extsk.to_diversifiable_full_viewing_key();
@@ -571,7 +571,7 @@ mod tests {
     fn fails_on_negative_change() {
         let mut rng = OsRng;
 
-        let transparent_address = TransparentAddress(rng.gen::<[u8; 20]>());
+        let transparent_address = TransparentAddress(rng.r#gen::<[u8; 20]>());
         // Just use the master key as the ExtendedSpendingKey for this test
         let extsk = ExtendedSpendingKey::master(&[]);
         let tx_height = TEST_NETWORK

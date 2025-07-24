@@ -11,9 +11,9 @@ use group::GroupEncoding;
 use crate::consensus::{BlockHeight, BranchId};
 
 use super::{
+    Authorization, Authorized, TransactionDigest, TransparentDigests, TxDigests, TxId, TxVersion,
     sapling::{self, ConvertDescription, OutputDescription, SpendDescription},
     transparent::{self, TxIn, TxOut},
-    Authorization, Authorized, TransactionDigest, TransparentDigests, TxDigests, TxId, TxVersion,
 };
 
 /// TxId tree root personalization

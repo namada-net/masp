@@ -1,4 +1,4 @@
-use bellman::groth16::{verify_proof, PreparedVerifyingKey, Proof};
+use bellman::groth16::{PreparedVerifyingKey, Proof, verify_proof};
 use bls12_381::Bls12;
 use group::GroupEncoding;
 use masp_primitives::{

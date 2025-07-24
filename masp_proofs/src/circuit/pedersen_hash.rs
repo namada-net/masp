@@ -107,7 +107,7 @@ mod test {
     use super::*;
     use bellman::gadgets::boolean::{AllocatedBit, Boolean};
     use bellman::gadgets::test::*;
-    use group::{ff::PrimeField, Curve};
+    use group::{Curve, ff::PrimeField};
     use masp_primitives::sapling::pedersen_hash;
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
@@ -120,8 +120,8 @@ mod test {
         let precomputed_booleans = 2 + (personalized_bits % 3 == 1) as usize;
 
         // Count chunks and segments with ceiling division
-        let chunks = (personalized_bits + 3 - 1) / 3;
-        let segments = (chunks + 63 - 1) / 63;
+        let chunks = personalized_bits.div_ceil(3);
+        let segments = chunks.div_ceil(63);
         let all_but_last_segments = segments - 1;
         let last_chunks = chunks - all_but_last_segments * 63;
 

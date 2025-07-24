@@ -2,11 +2,11 @@
 //!
 //! [ZIP 32]: https://zips.z.cash/zip-0032
 
-use borsh::schema::add_definition;
+use borsh::BorshSchema;
 use borsh::schema::Declaration;
 use borsh::schema::Definition;
 use borsh::schema::Fields;
-use borsh::BorshSchema;
+use borsh::schema::add_definition;
 use memuse::{self, DynamicUsage};
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
@@ -18,10 +18,10 @@ pub mod sapling;
 use borsh::{BorshDeserialize, BorshSerialize};
 #[deprecated(note = "Please use the types exported from the `zip32::sapling` module instead.")]
 pub use sapling::{
-    sapling_address, sapling_default_address, sapling_derive_internal_fvk, sapling_find_address,
     DiversifiableFullViewingKey, ExtendedFullViewingKey, ExtendedKey, ExtendedSpendingKey,
     PseudoExtendedKey, ZIP32_SAPLING_FVFP_PERSONALIZATION, ZIP32_SAPLING_INT_PERSONALIZATION,
-    ZIP32_SAPLING_MASTER_PERSONALIZATION,
+    ZIP32_SAPLING_MASTER_PERSONALIZATION, sapling_address, sapling_default_address,
+    sapling_derive_internal_fvk, sapling_find_address,
 };
 use std::io::{Read, Write};
 

@@ -28,10 +28,10 @@ use alloc::vec::Vec;
 use core::convert::TryInto;
 
 use chacha20::{
-    cipher::{StreamCipher, StreamCipherSeek},
     ChaCha20,
+    cipher::{StreamCipher, StreamCipherSeek},
 };
-use chacha20poly1305::{aead::AeadInPlace, ChaCha20Poly1305, KeyInit};
+use chacha20poly1305::{ChaCha20Poly1305, KeyInit, aead::AeadInPlace};
 use cipher::KeyIvInit;
 
 //use crate::constants::ASSET_IDENTIFIER_LENGTH;
@@ -363,7 +363,6 @@ pub trait ShieldedOutput<D: Domain, const CIPHERTEXT_SIZE: usize> {
 ///
 /// Implements section 4.19 of the
 /// [Zcash Protocol Specification](https://zips.z.cash/protocol/nu5.pdf#saplingandorchardinband)
-
 pub struct NoteEncryption<D: Domain> {
     epk: D::EphemeralPublicKey,
     esk: D::EphemeralSecretKey,

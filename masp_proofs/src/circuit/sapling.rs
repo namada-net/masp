@@ -1,12 +1,12 @@
 //! The MASP Spend and Output circuits.
 
-use group::{ff::PrimeField, Curve};
+use group::{Curve, ff::PrimeField};
 
 use bellman::{Circuit, ConstraintSystem, SynthesisError};
 
 use masp_primitives::{
     constants,
-    sapling::{PaymentAddress, ProofGenerationKey, ValueCommitment, SAPLING_COMMITMENT_TREE_DEPTH},
+    sapling::{PaymentAddress, ProofGenerationKey, SAPLING_COMMITMENT_TREE_DEPTH, ValueCommitment},
 };
 
 use super::ecc;
@@ -15,7 +15,7 @@ use crate::constants::{
     NOTE_COMMITMENT_RANDOMNESS_GENERATOR, NULLIFIER_POSITION_GENERATOR,
     PROOF_GENERATION_KEY_GENERATOR, SPENDING_KEY_GENERATOR, VALUE_COMMITMENT_RANDOMNESS_GENERATOR,
 };
-use bellman::gadgets::{blake2s, boolean, multipack, num, Assignment};
+use bellman::gadgets::{Assignment, blake2s, boolean, multipack, num};
 use itertools::multizip;
 
 pub const TREE_DEPTH: usize = SAPLING_COMMITMENT_TREE_DEPTH;
@@ -596,10 +596,10 @@ impl Circuit<bls12_381::Scalar> for Output {
 #[test]
 fn test_input_circuit_with_bls12_381() {
     use bellman::gadgets::test::*;
-    use group::{ff::Field, ff::PrimeFieldBits, Group};
+    use group::{Group, ff::Field, ff::PrimeFieldBits};
     use masp_primitives::{
         asset_type::AssetType,
-        sapling::{pedersen_hash, Diversifier, Note, ProofGenerationKey, Rseed},
+        sapling::{Diversifier, Note, ProofGenerationKey, Rseed, pedersen_hash},
     };
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
@@ -762,7 +762,7 @@ fn test_input_circuit_with_bls12_381() {
 #[test]
 fn test_input_circuit_with_bls12_381_external_test_vectors() {
     use bellman::gadgets::test::*;
-    use group::{ff::Field, ff::PrimeField, ff::PrimeFieldBits, Group};
+    use group::{Group, ff::Field, ff::PrimeField, ff::PrimeFieldBits};
     use masp_primitives::{
         asset_type::AssetType,
         sapling::pedersen_hash,
@@ -948,7 +948,7 @@ fn test_input_circuit_with_bls12_381_external_test_vectors() {
 #[test]
 fn test_output_circuit_with_bls12_381() {
     use bellman::gadgets::test::*;
-    use group::{ff::Field, Group};
+    use group::{Group, ff::Field};
     use masp_primitives::{
         asset_type::AssetType,
         sapling::{Diversifier, ProofGenerationKey, Rseed},

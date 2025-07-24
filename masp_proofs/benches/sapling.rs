@@ -4,7 +4,7 @@ extern crate criterion;
 use bellman::groth16::*;
 use bls12_381::Bls12;
 use criterion::Criterion;
-use group::{ff::Field, Group};
+use group::{Group, ff::Field};
 use masp_primitives::{
     asset_type::AssetType,
     sapling::{Diversifier, ProofGenerationKey},

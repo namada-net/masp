@@ -1,7 +1,7 @@
 //! Consensus logic and parameters.
 
-use borsh::schema::add_definition;
 use borsh::schema::Definition;
+use borsh::schema::add_definition;
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use memuse::DynamicUsage;
 use std::cmp::{Ord, Ordering};
@@ -141,7 +141,7 @@ pub trait Parameters: Clone {
     /// Determines whether the specified network upgrade is active as of the
     /// provided block height on the network to which this Parameters value applies.
     fn is_nu_active(&self, nu: NetworkUpgrade, height: BlockHeight) -> bool {
-        self.activation_height(nu).map_or(false, |h| h <= height)
+        self.activation_height(nu).is_some_and(|h| h <= height)
     }
 }
 
@@ -383,7 +383,7 @@ mod tests {
     use std::convert::TryFrom;
 
     use super::{
-        BlockHeight, BranchId, NetworkUpgrade, Parameters, MAIN_NETWORK, UPGRADES_IN_ORDER,
+        BlockHeight, BranchId, MAIN_NETWORK, NetworkUpgrade, Parameters, UPGRADES_IN_ORDER,
     };
 
     #[test]
