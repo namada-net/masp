@@ -15,7 +15,7 @@ categories = ["cryptography::cryptocurrencies"]
 all-features = true
 
 [dependencies]
-masp_primitives = { version = "1.4.0", path = "../masp_primitives" }
+masp_primitives = { version = "2.0.0", path = "../masp_primitives" }
 
 # Dependencies exposed in a public API:
 # (Breaking upgrades to these require a breaking upgrade to this crate.)
