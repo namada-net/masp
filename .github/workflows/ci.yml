@@ -43,13 +43,13 @@ jobs:
       - name: Run slow tests
         run: cargo test --all-features --verbose --release --all -- --ignored
   build:
-    name: Build target ${{ matrix.target }}
+    name: Build target ${{ matrix.target.tag }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         target:
-          - wasm32-unknown-unknown
-          - wasm32-wasip2
+          - {tag: wasm32-unknown-unknown, name: wasm32-unknown-unknown}
+          - {tag: wasm32-wasi, name: wasm32-wasip2}
 
     steps:
       - uses: actions/checkout@v3
@@ -58,11 +58,11 @@ jobs:
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Add target
-        run: rustup target add ${{ matrix.target }}
+        run: rustup target add ${{ matrix.target.name }}
       - run: cargo fetch
       - name: Build masp_proofs for target
         working-directory: ./masp_proofs
-        run: cargo build --verbose --no-default-features --target ${{ matrix.target }} --features js
+        run: cargo build --verbose --no-default-features --target ${{ matrix.target.name }} --features js
 
 
   bitrot:
