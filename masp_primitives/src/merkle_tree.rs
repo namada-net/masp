@@ -9,10 +9,6 @@ use borsh::schema::Fields;
 use borsh::schema::add_definition;
 use borsh::{BorshDeserialize, BorshSerialize};
 use core::convert::TryFrom;
-use incrementalmerkletree::{
-    self, Altitude,
-    bridgetree::{self, Leaf},
-};
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
 use std::io::{self, Read, Write};
@@ -67,7 +63,7 @@ where
     /// Returns the parent node within the tree of the two given nodes.
     fn combine(alt: usize, lhs: &Self, rhs: &Self) -> Self {
         <Self as incrementalmerkletree::Hashable>::combine(
-            Altitude::from(
+            incrementalmerkletree::Level::from(
                 u8::try_from(alt).expect("Tree heights greater than 255 are unsupported."),
             ),
             lhs,
@@ -82,7 +78,7 @@ where
 
     /// Returns the empty root for the given depth.
     fn empty_root(alt: usize) -> Self {
-        <Self as incrementalmerkletree::Hashable>::empty_root(Altitude::from(
+        <Self as incrementalmerkletree::Hashable>::empty_root(incrementalmerkletree::Level::from(
             u8::try_from(alt).expect("Tree heights greater than 255 are unsupported."),
         ))
     }
@@ -293,57 +289,38 @@ impl<Node> CommitmentTree<Node> {
         }
     }
 
-    pub fn from_frontier<const DEPTH: u8>(frontier: &bridgetree::Frontier<Node, DEPTH>) -> Self
+    /// Convert this tree into an [`incrementalmerkletree`] data structure.
+    pub fn into_incrementalmerkletree(
+        self,
+    ) -> incrementalmerkletree::frontier::CommitmentTree<
+        Node,
+        { SAPLING_COMMITMENT_TREE_DEPTH as u8 },
+    > {
+        incrementalmerkletree::frontier::CommitmentTree::from_parts(
+            self.left,
+            self.right,
+            self.parents,
+        )
+        // NB: this can only fail if the parents len is
+        // greater than SAPLING_COMMITMENT_TREE_DEPTH,
+        // which will never happen
+        .unwrap()
+    }
+
+    /// Convert this tree from an [`incrementalmerkletree`] data structure.
+    pub fn from_incrementalmerkletree(
+        tree: &incrementalmerkletree::frontier::CommitmentTree<
+            Node,
+            { SAPLING_COMMITMENT_TREE_DEPTH as u8 },
+        >,
+    ) -> CommitmentTree<Node>
     where
         Node: Clone,
     {
-        frontier.value().map_or_else(Self::empty, |f| {
-            let (left, right) = match f.leaf() {
-                Leaf::Left(v) => (Some(v.clone()), None),
-                Leaf::Right(l, r) => (Some(l.clone()), Some(r.clone())),
-            };
-            let mut ommers_iter = f.ommers().iter().cloned();
-            let upos: usize = f.position().into();
-            Self {
-                left,
-                right,
-                parents: (1..DEPTH)
-                    .map(|i| {
-                        if upos & (1 << i) == 0 {
-                            None
-                        } else {
-                            ommers_iter.next()
-                        }
-                    })
-                    .collect(),
-            }
-        })
-    }
-
-    pub fn to_frontier<const DEPTH: u8>(&self) -> bridgetree::Frontier<Node, DEPTH>
-    where
-        Node: incrementalmerkletree::Hashable + Clone,
-    {
-        if self.size() == 0 {
-            bridgetree::Frontier::empty()
-        } else {
-            let leaf = match (self.left.as_ref(), self.right.as_ref()) {
-                (Some(a), None) => bridgetree::Leaf::Left(a.clone()),
-                (Some(a), Some(b)) => bridgetree::Leaf::Right(a.clone(), b.clone()),
-                _ => unreachable!(),
-            };
-
-            let ommers = self
-                .parents
-                .iter()
-                .filter_map(|v| v.as_ref())
-                .cloned()
-                .collect();
-
-            // If a frontier cannot be successfully constructed from the
-            // parts of a commitment tree, it is a programming error.
-            bridgetree::Frontier::from_parts((self.size() - 1).into(), leaf, ommers)
-                .expect("Frontier should be constructable from CommitmentTree.")
+        CommitmentTree {
+            left: tree.left().as_ref().cloned(),
+            right: tree.right().as_ref().cloned(),
+            parents: tree.parents().clone(),
         }
     }
 
@@ -535,6 +512,49 @@ impl<Node: Hashable> IncrementalWitness<Node> {
             cursor_depth: 0,
             cursor: None,
         }
+    }
+
+    /// Convert this witness into an [`incrementalmerkletree`] data structure.
+    pub fn into_incrementalmerkletree(
+        self,
+    ) -> incrementalmerkletree::witness::IncrementalWitness<
+        Node,
+        { SAPLING_COMMITMENT_TREE_DEPTH as u8 },
+    > {
+        incrementalmerkletree::witness::IncrementalWitness::from_parts(
+            self.tree.into_incrementalmerkletree(),
+            self.filled,
+            self.cursor.map(CommitmentTree::into_incrementalmerkletree),
+        )
+        // NB: this can only fail if the parents len is
+        // greater than SAPLING_COMMITMENT_TREE_DEPTH,
+        // which will never happen
+        .unwrap()
+    }
+
+    /// Convert this witness from an [`incrementalmerkletree`] data structure.
+    pub fn from_incrementalmerkletree(
+        witness: &incrementalmerkletree::witness::IncrementalWitness<
+            Node,
+            { SAPLING_COMMITMENT_TREE_DEPTH as u8 },
+        >,
+    ) -> IncrementalWitness<Node>
+    where
+        Node: Clone,
+    {
+        let mut witness = IncrementalWitness {
+            tree: CommitmentTree::from_incrementalmerkletree(witness.tree()),
+            filled: witness.filled().clone(),
+            cursor: witness
+                .cursor()
+                .as_ref()
+                .map(CommitmentTree::from_incrementalmerkletree),
+            cursor_depth: 0,
+        };
+
+        witness.cursor_depth = witness.next_depth();
+
+        witness
     }
 
     /// Reads an `IncrementalWitness` from its serialized form.
@@ -878,7 +898,6 @@ impl<Node: BorshSchema> BorshSchema for MerklePath<Node> {
 mod tests {
 
     use borsh::BorshSerialize;
-    use incrementalmerkletree::bridgetree::Frontier;
     use proptest::prelude::*;
     use std::convert::TryInto;
     use std::io::{self, Read, Write};
@@ -1517,11 +1536,9 @@ mod tests {
     proptest! {
         #[test]
         fn prop_commitment_tree_roundtrip(ct in arb_commitment_tree(32, arb_node(), 8)) {
-            let frontier: Frontier<Node, 8> = ct.to_frontier();
-            let ct0 = CommitmentTree::from_frontier(&frontier);
+            let ct_inc = ct.clone().into_incrementalmerkletree();
+            let ct0 = CommitmentTree::from_incrementalmerkletree(&ct_inc);
             assert_eq!(ct, ct0);
-            let frontier0: Frontier<Node, 8> = ct0.to_frontier();
-            assert_eq!(frontier, frontier0);
         }
     }
 

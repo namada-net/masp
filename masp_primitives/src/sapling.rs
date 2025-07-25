@@ -14,7 +14,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ff::{Field, PrimeField};
 use group::{Curve, Group, GroupEncoding, cofactor::CofactorGroup};
-use incrementalmerkletree::{self, Altitude};
+use incrementalmerkletree::{self, Level};
 use lazy_static::lazy_static;
 use rand_core::{CryptoRng, RngCore};
 use std::{
@@ -96,11 +96,22 @@ impl Node {
         Node { repr }
     }
 
+    /// Convert this node into its byte vector representation.
+    pub const fn into_repr(self) -> [u8; 32] {
+        self.repr
+    }
+
     /// Constructs a new note commitment tree node from a [`bls12_381::Scalar`]
     pub fn from_scalar(cmu: bls12_381::Scalar) -> Self {
         Self {
             repr: cmu.to_repr(),
         }
+    }
+}
+
+impl AsRef<[u8; 32]> for Node {
+    fn as_ref(&self) -> &[u8; 32] {
+        &self.repr
     }
 }
 
@@ -111,14 +122,14 @@ impl incrementalmerkletree::Hashable for Node {
         }
     }
 
-    fn combine(altitude: Altitude, lhs: &Self, rhs: &Self) -> Self {
+    fn combine(level: Level, lhs: &Self, rhs: &Self) -> Self {
         Node {
-            repr: merkle_hash(altitude.into(), &lhs.repr, &rhs.repr),
+            repr: merkle_hash(level.into(), &lhs.repr, &rhs.repr),
         }
     }
 
-    fn empty_root(altitude: Altitude) -> Self {
-        EMPTY_ROOTS[<usize>::from(altitude)]
+    fn empty_root(level: Level) -> Self {
+        EMPTY_ROOTS[<usize>::from(level)]
     }
 }
 
