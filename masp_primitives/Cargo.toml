@@ -46,7 +46,7 @@ subtle = "2.2.3"
 bls12_381 = { package = "nam-bls12_381", version = "0.8.1-nam.0" }
 ff = "0.13"
 group = { version = "0.13", features = ["wnaf-memuse"] }
-incrementalmerkletree = "0.3"
+incrementalmerkletree = { version = "0.8.2", features = ["legacy-api"] }
 jubjub = { package = "nam-jubjub", version = "0.10.1-nam.0" }
 nonempty = "0.11"
 
