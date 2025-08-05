@@ -21,6 +21,7 @@ use std::ops::{AddAssign, Neg};
 use super::masp_compute_value_balance;
 use crate::circuit::convert::Convert;
 use crate::circuit::sapling::{Output, Spend};
+use crate::sapling::translation::create_random_ark_proof;
 
 /// A context object for creating the Sapling components of a Zcash transaction.
 pub struct SaplingProvingContext {
@@ -64,7 +65,6 @@ impl SaplingProvingContext {
     ) -> Result<(Proof<Bls12>, jubjub::ExtendedPoint, PublicKey), ()> {
         // Initialize secure RNG
         let mut rng = OsRng;
-
         // Accumulate the value commitment randomness in the context
         {
             let mut tmp = rcv;
@@ -114,7 +114,7 @@ impl SaplingProvingContext {
 
         // Create proof
         let proof =
-            create_random_proof(instance, proving_key, &mut rng).expect("proving should not fail");
+            create_random_ark_proof(instance, proving_key, &mut rng).expect("proving should not fail");
 
         // Try to verify the proof:
         // Construct public input for circuit
