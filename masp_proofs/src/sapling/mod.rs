@@ -3,8 +3,8 @@
 use masp_primitives::asset_type::AssetType;
 
 mod prover;
+pub mod translation;
 mod verifier;
-mod translation;
 
 pub use self::prover::SaplingProvingContext;
 pub use self::verifier::{

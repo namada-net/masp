@@ -1443,6 +1443,7 @@ dependencies = [
  "pprof",
  "rand_core",
  "rand_xorshift",
+ "rayon",
  "tracing",
 ]
 

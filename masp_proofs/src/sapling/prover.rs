@@ -21,7 +21,6 @@ use std::ops::{AddAssign, Neg};
 use super::masp_compute_value_balance;
 use crate::circuit::convert::Convert;
 use crate::circuit::sapling::{Output, Spend};
-use crate::sapling::translation::create_random_ark_proof;
 
 /// A context object for creating the Sapling components of a Zcash transaction.
 pub struct SaplingProvingContext {
@@ -65,6 +64,7 @@ impl SaplingProvingContext {
     ) -> Result<(Proof<Bls12>, jubjub::ExtendedPoint, PublicKey), ()> {
         // Initialize secure RNG
         let mut rng = OsRng;
+
         // Accumulate the value commitment randomness in the context
         {
             let mut tmp = rcv;
@@ -114,7 +114,7 @@ impl SaplingProvingContext {
 
         // Create proof
         let proof =
-            create_random_ark_proof(instance, proving_key, &mut rng).expect("proving should not fail");
+            create_random_proof(instance, proving_key, &mut rng).expect("proving should not fail");
 
         // Try to verify the proof:
         // Construct public input for circuit
@@ -323,5 +323,88 @@ impl SaplingProvingContext {
             &mut rng,
             VALUE_COMMITMENT_RANDOMNESS_GENERATOR,
         ))
+    }
+}
+
+#[cfg(test)]
+mod testy_provers {
+    use super::*;
+    use crate::sapling::translation::{create_ark_proof_from_bell_circuit, extract_proving_key};
+    use bellman::groth16::generate_random_parameters;
+    use group::Group;
+    use masp_primitives::ff::Field;
+    use rand_core::{RngCore, SeedableRng};
+
+    #[test]
+    fn test_spend_proof() {
+        let mut rng = rand_xorshift::XorShiftRng::from_seed([
+            0x59, 0x62, 0xbe, 0x3d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
+            0xbc, 0xe5,
+        ]);
+
+        let groth_params = generate_random_parameters::<Bls12, _, _>(
+            Spend {
+                value_commitment: None,
+                proof_generation_key: None,
+                payment_address: None,
+                commitment_randomness: None,
+                ar: None,
+                auth_path: vec![None; 32],
+                anchor: None,
+            },
+            &mut rng,
+        )
+        .unwrap();
+
+        let value_commitment = AssetType::new(b"benchmark")
+            .unwrap()
+            .value_commitment(1, jubjub::Fr::random(&mut rng));
+
+        let proof_generation_key = ProofGenerationKey {
+            ak: jubjub::SubgroupPoint::random(&mut rng),
+            nsk: jubjub::Fr::random(&mut rng),
+        };
+
+        let viewing_key = proof_generation_key.to_viewing_key();
+
+        let payment_address;
+
+        loop {
+            let diversifier = {
+                let mut d = [0; 11];
+                rng.fill_bytes(&mut d);
+                Diversifier(d)
+            };
+
+            if let Some(p) = viewing_key.to_payment_address(diversifier) {
+                payment_address = p;
+                break;
+            }
+        }
+        let proving_key = extract_proving_key(&groth_params).expect("Test failed");
+        let commitment_randomness = jubjub::Fr::random(&mut rng);
+        let auth_path =
+            vec![Some((bls12_381::Scalar::random(&mut rng), rng.next_u32() % 2 != 0)); 32];
+        let ar = jubjub::Fr::random(&mut rng);
+        let anchor = bls12_381::Scalar::from_bytes(&[
+            117, 236, 217, 132, 11, 10, 244, 206, 138, 31, 189, 167, 170, 89, 134, 174, 148, 219,
+            172, 161, 1, 137, 161, 162, 128, 22, 71, 249, 44, 199, 91, 95,
+        ])
+        .unwrap();
+
+        create_ark_proof_from_bell_circuit(
+            Spend {
+                value_commitment: Some(value_commitment.clone()),
+                proof_generation_key: Some(proof_generation_key.clone()),
+                payment_address: Some(payment_address),
+                commitment_randomness: Some(commitment_randomness),
+                ar: Some(ar),
+                auth_path: auth_path.clone(),
+                anchor: Some(anchor),
+            },
+            &proving_key,
+            &mut rng,
+        )
+        .expect("Test failed");
     }
 }

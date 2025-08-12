@@ -5,34 +5,44 @@
 use std::io;
 use std::ops::{AddAssign, Mul};
 
-use ark_bls12_381::{Fq as ArkG1, Fr as ArkScalar, Bls12_381};
-use ark_ec::{AffineRepr, CurveGroup, VariableBaseMSM};
+use ark_bls12_381::{Bls12_381, Fq as ArkG1};
 use ark_ec::pairing::Pairing;
-use ark_ff::{BigInt, PrimeField as ArkPrimeField, Zero, Fp2, One};
+use ark_ec::{AffineRepr, CurveGroup, VariableBaseMSM};
+use ark_ff::{BigInt, Fp2, PrimeField as ArkPrimeField, Zero};
 use ark_groth16::ProvingKey;
 use ark_groth16::r1cs_to_qap::{LibsnarkReduction, R1CSToQAP};
 use ark_poly::GeneralEvaluationDomain;
-use ark_relations::ns;
-use ark_relations::r1cs::{ConstraintSystemRef, OptimizationGoal, Variable as ArkVar};
-use bellman::{Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
+use ark_relations::r1cs::ConstraintSystemRef;
+use bellman::domain::Scalar;
 use bellman::groth16::{ParameterSource, Proof};
+use bellman::multiexp::DensityTracker;
+use bellman::{Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
 use bls12_381::Bls12;
-use group::ff::{Field, PrimeField};
+use group::ff::Field;
+
+use masp_primitives::ff::PrimeField;
 use pairing::Engine;
 use rand_core::RngCore;
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
 
-pub struct ArkCS(ConstraintSystemRef<ArkScalar>);
+pub type BellmanScalar = <Bls12 as Engine>::Fr;
+pub type ArkScalar = ark_bls12_381::Fr;
+pub struct ArkCS {
+    pub inner: ConstraintSystemRef<ArkScalar>,
+}
 
 impl Default for ArkCS {
     fn default() -> Self {
-        ArkCS(ark_relations::r1cs::ConstraintSystem::new_ref())
+        ArkCS {
+            inner: ark_relations::r1cs::ConstraintSystem::new_ref(),
+        }
     }
 }
 
-
 /// If I've understood all the poorly documented code correctly, there is a
 /// small chance that this works
-pub fn conv_scalar(bellman_scalar: <Bls12 as Engine>::Fr) -> ArkScalar {
+pub fn conv_scalar(bellman_scalar: BellmanScalar) -> ArkScalar {
     let value = bellman_scalar.to_bytes();
     let mut v_bytes = [0u64; 4];
     v_bytes[0] = u64::from_le_bytes(<[u8; 8]>::try_from(&value[0..8]).unwrap());
@@ -47,9 +57,9 @@ pub fn conv_fp(bytes: [u8; 48]) -> ArkG1 {
     v_bytes[5] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[0..8]).unwrap());
     v_bytes[4] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[8..16]).unwrap());
     v_bytes[3] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[16..24]).unwrap());
-    v_bytes[3] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[24..32]).unwrap());
-    v_bytes[2] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[32..40]).unwrap());
-    v_bytes[1] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[40..48]).unwrap());
+    v_bytes[2] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[24..32]).unwrap());
+    v_bytes[1] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[32..40]).unwrap());
+    v_bytes[0] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[40..48]).unwrap());
     ArkG1::new(BigInt::new(v_bytes))
 }
 
@@ -59,11 +69,11 @@ pub fn conv_g1(bellman_g1: <Bls12 as Engine>::G1Affine) -> <Bls12_381 as Pairing
     type G1Aff = <Bls12_381 as Pairing>::G1Affine;
 
     let b_bytes = bellman_g1.to_uncompressed();
-    let is_infinity = ((b_bytes[0] >> 6 ) & 1) == 1;
+    let is_infinity = ((b_bytes[0] >> 6) & 1) == 1;
     if is_infinity {
         return G1Aff {
             x: ArkG1::zero(),
-            y: ArkG1::one(),
+            y: ArkG1::zero(),
             infinity: true,
         };
     }
@@ -82,7 +92,7 @@ pub fn conv_g1(bellman_g1: <Bls12 as Engine>::G1Affine) -> <Bls12_381 as Pairing
     G1Aff {
         x: conv_fp(x),
         y: conv_fp(y),
-        infinity: is_infinity
+        infinity: is_infinity,
     }
 }
 
@@ -90,13 +100,13 @@ pub fn conv_g2(bellman_g2: <Bls12 as Engine>::G2Affine) -> <Bls12_381 as Pairing
     type G2Aff = <Bls12_381 as Pairing>::G2Affine;
 
     let b_bytes = bellman_g2.to_uncompressed();
-    let is_infinity = ((b_bytes[0] >> 6 ) & 1) == 1;
+    let is_infinity = ((b_bytes[0] >> 6) & 1) == 1;
     if is_infinity {
-        return G2Aff{
+        return G2Aff {
             x: Fp2::zero(),
-            y: Fp2::one(),
+            y: Fp2::zero(),
             infinity: true,
-        }
+        };
     }
     let xc1 = {
         let mut tmp = [0; 48];
@@ -126,12 +136,13 @@ pub fn conv_g2(bellman_g2: <Bls12 as Engine>::G2Affine) -> <Bls12_381 as Pairing
     G2Aff {
         x: Fp2::new(conv_fp(xc0), conv_fp(xc1)),
         y: Fp2::new(conv_fp(yc0), conv_fp(yc1)),
-        infinity: is_infinity,
+        infinity: false,
     }
 }
 
 pub fn conv_ark_g1(ark_g1: <Bls12_381 as Pairing>::G1Affine) -> <Bls12 as Engine>::G1Affine {
     type G1Aff = <Bls12 as Engine>::G1Affine;
+
     if ark_g1.infinity {
         return Default::default();
     }
@@ -144,75 +155,80 @@ pub fn conv_ark_g1(ark_g1: <Bls12_381 as Pairing>::G1Affine) -> <Bls12 as Engine
             .into_iter()
             .rev()
             .flatten()
-            .chain(ark_g1
-                .y
-                .into_bigint()
-                .0
-                .map(u64::to_be_bytes)
-                .into_iter()
-                .rev()
-                .flatten())
-            .collect::<Vec<_>>()
-    ).unwrap();
-    G1Aff::from_uncompressed(&bytes).unwrap()
-
+            .chain(
+                ark_g1
+                    .y
+                    .into_bigint()
+                    .0
+                    .map(u64::to_be_bytes)
+                    .into_iter()
+                    .rev()
+                    .flatten(),
+            )
+            .collect::<Vec<_>>(),
+    )
+    .unwrap();
+    G1Aff::from_uncompressed_unchecked(&bytes).unwrap()
 }
 
 pub fn conv_ark_g2(ark_g2: <Bls12_381 as Pairing>::G2Affine) -> <Bls12 as Engine>::G2Affine {
     type G2Aff = <Bls12 as Engine>::G2Affine;
+
     if ark_g2.infinity {
         return G2Aff::identity();
     }
     let bytes = <[u8; 192]>::try_from(
         ark_g2
             .x
-            .c0
+            .c1
             .into_bigint()
             .0
             .map(u64::to_be_bytes)
             .into_iter()
             .rev()
             .flatten()
-            .chain(ark_g2
-                .x
-                .c1
-                .into_bigint()
-                .0
-                .map(u64::to_be_bytes)
-                .into_iter()
-                .rev()
-                .flatten())
-            .chain(ark_g2
-                .y
-                .c0
-                .into_bigint()
-                .0
-                .map(u64::to_be_bytes)
-                .into_iter()
-                .rev()
-                .flatten()
+            .chain(
+                ark_g2
+                    .x
+                    .c0
+                    .into_bigint()
+                    .0
+                    .map(u64::to_be_bytes)
+                    .into_iter()
+                    .rev()
+                    .flatten(),
             )
-            .chain(ark_g2
-                .y
-                .c1
-                .into_bigint()
-                .0
-                .map(u64::to_be_bytes)
-                .into_iter()
-                .rev()
-                .flatten()
+            .chain(
+                ark_g2
+                    .y
+                    .c1
+                    .into_bigint()
+                    .0
+                    .map(u64::to_be_bytes)
+                    .into_iter()
+                    .rev()
+                    .flatten(),
             )
-            .collect::<Vec<_>>()
-    ).unwrap();
+            .chain(
+                ark_g2
+                    .y
+                    .c0
+                    .into_bigint()
+                    .0
+                    .map(u64::to_be_bytes)
+                    .into_iter()
+                    .rev()
+                    .flatten(),
+            )
+            .collect::<Vec<_>>(),
+    )
+    .unwrap();
 
-    G2Aff::from_uncompressed(&bytes).unwrap()
+    G2Aff::from_uncompressed_unchecked(&bytes).unwrap()
 }
 
 pub fn conv_proof(ark_proof: ark_groth16::data_structures::Proof<Bls12_381>) -> Proof<Bls12> {
-    type G1Aff = <Bls12_381 as Pairing>::G1Affine;
-    let ark_groth16::data_structures::Proof::<Bls12_381> {
-        a, b, c
-    } = ark_proof;
+    let ark_groth16::data_structures::Proof::<Bls12_381> { a, b, c } = ark_proof;
     Proof::<Bls12> {
         a: conv_ark_g1(a),
         b: conv_ark_g2(b),
@@ -222,57 +238,38 @@ pub fn conv_proof(ark_proof: ark_groth16::data_structures::Proof<Bls12_381>) -> 
 
 pub fn conv_error(ark_err: ark_relations::r1cs::SynthesisError) -> SynthesisError {
     match ark_err {
-        ark_relations::r1cs::SynthesisError::MissingCS => SynthesisError::IoError(io::Error::other("MissingCS")),
+        ark_relations::r1cs::SynthesisError::MissingCS => {
+            SynthesisError::IoError(io::Error::other("MissingCS"))
+        }
         ark_relations::r1cs::SynthesisError::AssignmentMissing => SynthesisError::AssignmentMissing,
         ark_relations::r1cs::SynthesisError::DivisionByZero => SynthesisError::DivisionByZero,
         ark_relations::r1cs::SynthesisError::Unsatisfiable => SynthesisError::Unsatisfiable,
-        ark_relations::r1cs::SynthesisError::PolynomialDegreeTooLarge => SynthesisError::PolynomialDegreeTooLarge,
-        ark_relations::r1cs::SynthesisError::UnexpectedIdentity => SynthesisError::UnexpectedIdentity,
-        ark_relations::r1cs::SynthesisError::MalformedVerifyingKey => SynthesisError::IoError(io::Error::other("MalformedVerifyingKey")),
-        ark_relations::r1cs::SynthesisError::UnconstrainedVariable => SynthesisError::UnconstrainedVariable,
+        ark_relations::r1cs::SynthesisError::PolynomialDegreeTooLarge => {
+            SynthesisError::PolynomialDegreeTooLarge
+        }
+        ark_relations::r1cs::SynthesisError::UnexpectedIdentity => {
+            SynthesisError::UnexpectedIdentity
+        }
+        ark_relations::r1cs::SynthesisError::MalformedVerifyingKey => {
+            SynthesisError::IoError(io::Error::other("MalformedVerifyingKey"))
+        }
+        ark_relations::r1cs::SynthesisError::UnconstrainedVariable => {
+            SynthesisError::UnconstrainedVariable
+        }
     }
 }
-
-/// If there is any justice in the universe, all bellman variable will be allocated
-/// using the constraint system below. This means that the corresponding arkworks
-/// variable has also been allocated with the same index.
-pub fn conv_var(bellman_var: Variable) -> ArkVar {
-    match bellman_var.get_unchecked() {
-        Index::Input(idx) => ArkVar::Instance(idx),
-        Index::Aux(idx) => ArkVar::Witness(idx),
-    }
-}
-
-/// Convert linear combinations from bellman to arkworks
-pub fn conv_lc(bellman_lc: LinearCombination<<Bls12 as Engine>::Fr>) -> ark_relations::r1cs::LinearCombination<ArkScalar> {
-    let mut ark_lc = ark_relations::r1cs::LinearCombination::<ArkScalar>(Vec::with_capacity(bellman_lc.as_ref().len()));
-    for (var, scalar) in bellman_lc.as_ref() {
-        let var = conv_var(*var);
-        let scalar = conv_scalar(*scalar);
-        ark_lc.0.push((scalar, var));
-    }
-    ark_lc
-}
-
 
 pub fn extract_proving_key(
     mut bellman_pk: &bellman::groth16::Parameters<Bls12>,
-    prover: ConstraintSystemRef<ArkScalar>
-) -> Result<ProvingKey<Bls12_381>, SynthesisError>
-{
-    let vk = bellman_pk.get_vk(
-        prover
-            .borrow()
-            .map(|cs| cs.instance_assignment.len())
-            .unwrap_or_default()
-    )?;
+) -> Result<ProvingKey<Bls12_381>, SynthesisError> {
+    let vk = bellman_pk.get_vk(0)?;
     Ok(ProvingKey {
         vk: ark_groth16::data_structures::VerifyingKey {
             alpha_g1: conv_g1(vk.alpha_g1),
-            beta_g2:  conv_g2(vk.beta_g2),
+            beta_g2: conv_g2(vk.beta_g2),
             gamma_g2: conv_g2(vk.gamma_g2),
             delta_g2: conv_g2(vk.delta_g2),
-            gamma_abc_g1: vec![],
+            gamma_abc_g1: vk.ic.iter().map(|x| conv_g1(*x)).collect(),
         },
         beta_g1: conv_g1(vk.beta_g1),
         delta_g1: conv_g1(vk.delta_g1),
@@ -284,106 +281,58 @@ pub fn extract_proving_key(
     })
 }
 
-impl ConstraintSystem<<Bls12 as Engine>::Fr> for ArkCS {
-    type Root = Self;
-
-    fn alloc<F, A, AR>(&mut self, _annotation: A, f: F) -> Result<Variable, SynthesisError>
-    where
-        F: FnOnce() -> Result<<Bls12 as Engine>::Fr, SynthesisError>,
-        A: FnOnce() -> AR,
-        AR: Into<String>
-    {
-        let cs = ns!(self.0, "allocating private var").cs();
-        let value = conv_scalar(f()?);
-        let ArkVar::Witness(ix) = cs.new_witness_variable(|| Ok(value))
-            .map_err(conv_error)? else {
-            unreachable!()
-        };
-        Ok(Variable::new_unchecked(Index::Aux(ix)))
-
-    }
-
-    fn alloc_input<F, A, AR>(&mut self, _annotation: A, f: F) -> Result<Variable, SynthesisError>
-    where
-        F: FnOnce() -> Result<<Bls12 as Engine>::Fr, SynthesisError>,
-        A: FnOnce() -> AR,
-        AR: Into<String>
-    {
-        let cs = ns!(self.0, "allocating public var").cs();
-        let value = conv_scalar(f()?);
-        let ArkVar::Instance(ix) = cs.new_input_variable(|| Ok(value))
-            .map_err(conv_error)? else {
-            unreachable!()
-        };
-        Ok(Variable::new_unchecked(Index::Input(ix)))
-    }
-
-    fn enforce<A, AR, LA, LB, LC>(&mut self, annotation: A, a: LA, b: LB, c: LC)
-    where
-        A: FnOnce() -> AR,
-        AR: Into<String>,
-        LA: FnOnce(LinearCombination<<Bls12 as Engine>::Fr>) -> LinearCombination<<Bls12 as Engine>::Fr>,
-        LB: FnOnce(LinearCombination<<Bls12 as Engine>::Fr>) -> LinearCombination<<Bls12 as Engine>::Fr>,
-        LC: FnOnce(LinearCombination<<Bls12 as Engine>::Fr>) -> LinearCombination<<Bls12 as Engine>::Fr>
-    {
-        let cs = ns!(self.0, "enforcing constraints").cs();
-        let a = conv_lc(a(LinearCombination::zero()));
-        let b = conv_lc(b(LinearCombination::zero()));
-        let c = conv_lc(c(LinearCombination::zero()));
-        cs.enforce_constraint(a, b, c)
-            .expect("Big boo boo in enforcing constraints in arkworks");
-    }
-
-    fn push_namespace<NR, N>(&mut self, _name_fn: N)
-    where
-        NR: Into<String>,
-        N: FnOnce() -> NR
-    {
-        // the `ProvingAssignment` impl in bellman claims this is irrelevant. Fingers crossed
-    }
-
-    fn pop_namespace(&mut self) {
-        // the `ProvingAssignment` in bellman claims this is irrelevant. Fingers crossed
-    }
-
-    fn get_root(&mut self) -> &mut Self::Root {
-        self
-    }
-}
-
 type D<F> = GeneralEvaluationDomain<F>;
 
-pub fn create_random_ark_proof<C, R>(
+pub fn create_ark_proof_from_bell_circuit<C, R>(
     circuit: C,
-    bellman_pk: &bellman::groth16::Parameters<Bls12>,
+    proving_key: &ProvingKey<Bls12_381>,
     mut rng: &mut R,
 ) -> Result<Proof<Bls12>, SynthesisError>
 where
-    C: Circuit<<Bls12 as Engine>::Fr>,
+    C: Circuit<BellmanScalar>,
     R: RngCore,
 {
-    let r = conv_scalar(<Bls12 as pairing::Engine>::Fr::random(&mut rng));
-    let s = conv_scalar(<Bls12 as pairing::Engine>::Fr::random(&mut rng));
+    let r = conv_scalar(BellmanScalar::random(&mut rng));
+    let s = conv_scalar(BellmanScalar::random(&mut rng));
 
-    let mut prover = ArkCS::default();
-    prover.0.set_optimization_goal(OptimizationGoal::Constraints);
-    prover.alloc_input(|| "", || Ok(<Bls12 as pairing::Engine>::Fr::ONE))?;
+    let mut prover = ProvingAssignment {
+        a_aux_density: DensityTracker::new(),
+        b_input_density: DensityTracker::new(),
+        b_aux_density: DensityTracker::new(),
+        a: vec![],
+        b: vec![],
+        c: vec![],
+        input_assignment: vec![],
+        aux_assignment: vec![],
+    };
+
+    prover.alloc_input(|| "", || Ok(BellmanScalar::ONE))?;
+
     circuit.synthesize(&mut prover)?;
-    let cs = prover.0;
-    debug_assert!(cs.is_satisfied().unwrap());
-    cs.finalize();
-    let h = LibsnarkReduction::witness_map::<ArkScalar, D<ArkScalar>>(cs.clone()).map_err(conv_error)?;
-    let pk = extract_proving_key(bellman_pk, cs.clone())?;
+
+    for i in 0..prover.input_assignment.len() {
+        prover.enforce(
+            || "",
+            |lc| lc + Variable::new_unchecked(Index::Input(i)),
+            |lc| lc,
+            |lc| lc,
+        );
+    }
+
+    let prover = ArkCS::from(prover);
+    let cs = prover.inner;
+    let h = LibsnarkReduction::witness_map::<ArkScalar, D<ArkScalar>>(cs.clone())
+        .map_err(conv_error)?;
+
     let prover = cs.borrow().unwrap();
     Ok(conv_proof(create_proof_with_assignment(
-        &pk,
+        proving_key,
         r,
         s,
         &h,
         &prover.instance_assignment[1..],
         &prover.witness_assignment,
     )))
-
 }
 
 #[inline]
@@ -401,14 +350,20 @@ fn create_proof_with_assignment(
     let h_assignment = cfg_into_iter!(h)
         .map(|s| s.into_bigint())
         .collect::<Vec<_>>();
-    let h_acc = <ark_ec::bls12::Bls12<ark_bls12_381::Config> as Pairing>::G1::msm_bigint(&pk.h_query, &h_assignment);
+    let h_acc = <ark_ec::bls12::Bls12<ark_bls12_381::Config> as Pairing>::G1::msm_bigint(
+        &pk.h_query,
+        &h_assignment,
+    );
     drop(h_assignment);
 
     // Compute C
     let aux_assignment = cfg_iter!(aux_assignment)
         .map(|s| s.into_bigint())
         .collect::<Vec<_>>();
-    let l_aux_acc = <ark_ec::bls12::Bls12<ark_bls12_381::Config> as Pairing>::G1::msm_bigint(&pk.l_query, &aux_assignment);
+    let l_aux_acc = <ark_ec::bls12::Bls12<ark_bls12_381::Config> as Pairing>::G1::msm_bigint(
+        &pk.l_query,
+        &aux_assignment,
+    );
     let r_s_delta_g1 = pk.delta_g1 * (r * s);
 
     let input_assignment = input_assignment
@@ -421,21 +376,19 @@ fn create_proof_with_assignment(
     let r_g1 = pk.delta_g1.mul(r);
     let g_a = calculate_coeff(r_g1, &pk.a_query, pk.vk.alpha_g1, &assignment);
 
-    let s_g_a = g_a * &s;
+    let s_g_a = g_a * s;
     // Compute B in G1 if needed
     let g1_b = if !r.is_zero() {
         let s_g1 = pk.delta_g1.mul(s);
-        let g1_b = calculate_coeff(s_g1, &pk.b_g1_query, pk.beta_g1, &assignment);
-        g1_b
+        calculate_coeff(s_g1, &pk.b_g1_query, pk.beta_g1, &assignment)
     } else {
         <ark_ec::bls12::Bls12<ark_bls12_381::Config> as Pairing>::G1::zero()
     };
 
-
     // Compute B in G2
     let s_g2 = pk.vk.delta_g2.mul(s);
     let g2_b = calculate_coeff(s_g2, &pk.b_g2_query, pk.vk.beta_g2, &assignment);
-    let r_g1_b = g1_b * &r;
+    let r_g1_b = g1_b * r;
 
     drop(assignment);
 
@@ -452,7 +405,7 @@ fn create_proof_with_assignment(
     }
 }
 
-pub fn calculate_coeff<G: AffineRepr> (
+pub fn calculate_coeff<G: AffineRepr>(
     initial: G::Group,
     query: &[G],
     vk_param: G,
@@ -470,4 +423,225 @@ where
     res.add_assign(&vk_param);
 
     res
+}
+
+fn eval<S: PrimeField>(
+    lc: &LinearCombination<S>,
+    mut input_density: Option<&mut DensityTracker>,
+    mut aux_density: Option<&mut DensityTracker>,
+    input_assignment: &[S],
+    aux_assignment: &[S],
+) -> S {
+    let mut acc = S::ZERO;
+
+    for &(index, coeff) in lc.as_ref().iter() {
+        let mut tmp;
+
+        if !coeff.is_zero_vartime() {
+            match index.get_unchecked() {
+                Index::Input(i) => {
+                    tmp = input_assignment[i];
+                    if let Some(ref mut v) = input_density {
+                        v.inc(i);
+                    }
+                }
+                Index::Aux(i) => {
+                    tmp = aux_assignment[i];
+                    if let Some(ref mut v) = aux_density {
+                        v.inc(i);
+                    }
+                }
+            }
+
+            if coeff != S::ONE {
+                tmp *= coeff;
+            }
+            acc += tmp;
+        }
+    }
+
+    acc
+}
+
+impl From<ProvingAssignment<BellmanScalar>> for ArkCS {
+    fn from(value: ProvingAssignment<BellmanScalar>) -> Self {
+        let mut cs = ark_relations::r1cs::ConstraintSystem::default();
+        cs.num_instance_variables = value.input_assignment.len();
+        cs.num_witness_variables = value.aux_assignment.len();
+        cs.instance_assignment = value
+            .input_assignment
+            .into_iter()
+            .map(conv_scalar)
+            .collect();
+        cs.witness_assignment = value.aux_assignment.into_iter().map(conv_scalar).collect();
+        for (a, (b, c)) in value
+            .a
+            .into_iter()
+            .zip(value.b.into_iter().zip(value.c.into_iter()))
+        {
+            let a = ark_relations::r1cs::LinearCombination::<ArkScalar>(vec![(
+                conv_scalar(a.0),
+                ark_relations::r1cs::Variable::One,
+            )]);
+            let b = ark_relations::r1cs::LinearCombination::<ArkScalar>(vec![(
+                conv_scalar(b.0),
+                ark_relations::r1cs::Variable::One,
+            )]);
+            let c = ark_relations::r1cs::LinearCombination::<ArkScalar>(vec![(
+                conv_scalar(c.0),
+                ark_relations::r1cs::Variable::One,
+            )]);
+            cs.enforce_constraint(a, b, c).unwrap();
+        }
+        ArkCS {
+            inner: ConstraintSystemRef::new(cs),
+        }
+    }
+}
+pub struct ProvingAssignment<S: PrimeField> {
+    // Density of queries
+    pub a_aux_density: DensityTracker,
+    pub b_input_density: DensityTracker,
+    pub b_aux_density: DensityTracker,
+
+    // Evaluations of A, B, C polynomials
+    pub a: Vec<Scalar<S>>,
+    pub b: Vec<Scalar<S>>,
+    pub c: Vec<Scalar<S>>,
+
+    // Assignments of variables
+    pub input_assignment: Vec<S>,
+    pub aux_assignment: Vec<S>,
+}
+
+impl<S: PrimeField> ConstraintSystem<S> for ProvingAssignment<S> {
+    type Root = Self;
+
+    fn alloc<F, A, AR>(&mut self, _: A, f: F) -> Result<Variable, SynthesisError>
+    where
+        F: FnOnce() -> Result<S, SynthesisError>,
+        A: FnOnce() -> AR,
+        AR: Into<String>,
+    {
+        self.aux_assignment.push(f()?);
+        self.a_aux_density.add_element();
+        self.b_aux_density.add_element();
+
+        Ok(Variable::new_unchecked(Index::Aux(
+            self.aux_assignment.len() - 1,
+        )))
+    }
+
+    fn alloc_input<F, A, AR>(&mut self, _: A, f: F) -> Result<Variable, SynthesisError>
+    where
+        F: FnOnce() -> Result<S, SynthesisError>,
+        A: FnOnce() -> AR,
+        AR: Into<String>,
+    {
+        self.input_assignment.push(f()?);
+        self.b_input_density.add_element();
+
+        Ok(Variable::new_unchecked(Index::Input(
+            self.input_assignment.len() - 1,
+        )))
+    }
+
+    fn enforce<A, AR, LA, LB, LC>(&mut self, _: A, a: LA, b: LB, c: LC)
+    where
+        A: FnOnce() -> AR,
+        AR: Into<String>,
+        LA: FnOnce(LinearCombination<S>) -> LinearCombination<S>,
+        LB: FnOnce(LinearCombination<S>) -> LinearCombination<S>,
+        LC: FnOnce(LinearCombination<S>) -> LinearCombination<S>,
+    {
+        let a = a(LinearCombination::zero());
+        let b = b(LinearCombination::zero());
+        let c = c(LinearCombination::zero());
+
+        self.a.push(Scalar(eval(
+            &a,
+            // Inputs have full density in the A query
+            // because there are constraints of the
+            // form x * 0 = 0 for each input.
+            None,
+            Some(&mut self.a_aux_density),
+            &self.input_assignment,
+            &self.aux_assignment,
+        )));
+        self.b.push(Scalar(eval(
+            &b,
+            Some(&mut self.b_input_density),
+            Some(&mut self.b_aux_density),
+            &self.input_assignment,
+            &self.aux_assignment,
+        )));
+        self.c.push(Scalar(eval(
+            &c,
+            // There is no C polynomial query,
+            // though there is an (beta)A + (alpha)B + C
+            // query for all aux variables.
+            // However, that query has full density.
+            None,
+            None,
+            &self.input_assignment,
+            &self.aux_assignment,
+        )));
+    }
+
+    fn push_namespace<NR, N>(&mut self, _: N)
+    where
+        NR: Into<String>,
+        N: FnOnce() -> NR,
+    {
+        // Do nothing; we don't care about namespaces in this context.
+    }
+
+    fn pop_namespace(&mut self) {
+        // Do nothing; we don't care about namespaces in this context.
+    }
+
+    fn get_root(&mut self) -> &mut Self::Root {
+        self
+    }
+}
+
+#[cfg(test)]
+mod test_translations {
+    use super::*;
+
+    #[test]
+    fn test_g1_roundtrip() {
+        type BellmanG1Aff = <Bls12 as Engine>::G1Affine;
+        type ArkG1Aff = <Bls12_381 as Pairing>::G1Affine;
+
+        let g1 = BellmanG1Aff::identity();
+        let ark_g1 = conv_g1(g1);
+        assert_eq!(ark_g1, ArkG1Aff::identity());
+        let res = conv_ark_g1(ark_g1);
+        assert_eq!(g1, res);
+
+        let g1 = BellmanG1Aff::generator();
+        let res = conv_ark_g1(conv_g1(g1));
+        assert_eq!(g1, res);
+    }
+
+    #[test]
+    fn test_g2_roundtrip() {
+        type BellmanG2Aff = <Bls12 as Engine>::G2Affine;
+        type ArkG2Aff = <Bls12_381 as Pairing>::G2Affine;
+
+        let g2 = BellmanG2Aff::default();
+
+        let ark_g2 = conv_g2(g2);
+        assert!(ark_g2.is_on_curve());
+        assert_eq!(ark_g2, ArkG2Aff::identity());
+        let res = conv_ark_g2(ark_g2);
+        assert_eq!(g2, res);
+
+        let g2 = BellmanG2Aff::generator();
+        let ark_g2 = conv_g2(g2);
+        assert!(ark_g2.is_on_curve());
+        let res = conv_ark_g2(ark_g2);
+        assert_eq!(g2, res);
+    }
 }
