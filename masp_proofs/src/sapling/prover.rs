@@ -329,7 +329,7 @@ impl SaplingProvingContext {
 #[cfg(test)]
 mod testy_provers {
     use super::*;
-    use crate::sapling::translation::{create_ark_proof_from_bell_circuit, extract_proving_key};
+    use crate::sapling::translation::{conv_zksync_params, create_ark_proof_from_bell_circuit, create_zksync_proof, extract_proving_key};
     use bellman::groth16::generate_random_parameters;
     use group::Group;
     use masp_primitives::ff::Field;
@@ -381,7 +381,7 @@ mod testy_provers {
                 break;
             }
         }
-        let proving_key = extract_proving_key(&groth_params).expect("Test failed");
+        let proving_key = conv_zksync_params(groth_params);
         let commitment_randomness = jubjub::Fr::random(&mut rng);
         let auth_path =
             vec![Some((bls12_381::Scalar::random(&mut rng), rng.next_u32() % 2 != 0)); 32];
@@ -392,7 +392,7 @@ mod testy_provers {
         ])
         .unwrap();
 
-        create_ark_proof_from_bell_circuit(
+        create_zksync_proof(
             Spend {
                 value_commitment: Some(value_commitment.clone()),
                 proof_generation_key: Some(proof_generation_key.clone()),

@@ -10,9 +10,7 @@ use masp_primitives::{
     sapling::{Diversifier, ProofGenerationKey},
 };
 use masp_proofs::circuit::sapling::Spend;
-use masp_proofs::sapling::translation::{
-    create_ark_proof_from_bell_circuit, create_random_ark_proof, extract_proving_key,
-};
+use masp_proofs::sapling::translation::{conv_zksync_params, create_zksync_proof};
 use rand_core::{RngCore, SeedableRng};
 use rand_xorshift::XorShiftRng;
 
@@ -112,9 +110,9 @@ fn criterion_benchmark_arkworks(c: &mut Criterion) {
         &mut rng,
     )
     .unwrap();
-    let pk = extract_proving_key(&groth_params).unwrap();
+    let pk = conv_zksync_params(groth_params);
 
-    c.bench_function("sapling_arkworks", |b| {
+    c.bench_function("sapling_zksync", |b| {
         let value_commitment = AssetType::new(b"benchmark")
             .unwrap()
             .value_commitment(1, jubjub::Fr::random(&mut rng));
@@ -152,7 +150,7 @@ fn criterion_benchmark_arkworks(c: &mut Criterion) {
         .unwrap();
 
         b.iter(|| {
-            create_ark_proof_from_bell_circuit(
+            create_zksync_proof(
                 Spend {
                     value_commitment: Some(value_commitment.clone()),
                     proof_generation_key: Some(proof_generation_key.clone()),
@@ -175,7 +173,7 @@ criterion_group!(
     targets = criterion_benchmark_bellman);
 
 criterion_group!(
-    name = benches_arkworks;
+    name = benches_zksync;
     config = Criterion::default().sample_size(10);
     targets = criterion_benchmark_arkworks);
-criterion_main!(benches_bellman, benches_arkworks);
+criterion_main!(benches_bellman, benches_zksync);
