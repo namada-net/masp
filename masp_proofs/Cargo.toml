@@ -28,6 +28,8 @@ ark-r1cs-std = "0.5.0"
 ark-relations = "0.5.1"
 ark-std = { version = "0.5.0", features = ["parallel"] }
 bellman = { version = "0.14", default-features = false, features = ["groth16"] }
+bellperson = {path = "../../bellperson", features = ["groth16"]}
+blstrs = "0.7.1"
 bls12_381 = { package = "nam-bls12_381", version = "0.8.1-nam.0" }
 group = "0.13"
 jubjub = { package = "nam-jubjub", version = "0.10.1-nam.0" }
@@ -39,7 +41,6 @@ rand = "0.4.6"
 rand_core = "0.6"
 rand_xorshift = "0.3"
 tracing = "0.1"
-zksync_bellman = {path = "../../zksync-crypto/crates/bellman"}
 
 # Dependencies used internally:
 # (Breaking upgrades to these are usually backwards-compatible, but check MSRVs.)

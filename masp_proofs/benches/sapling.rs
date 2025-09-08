@@ -10,9 +10,9 @@ use masp_primitives::{
     sapling::{Diversifier, ProofGenerationKey},
 };
 use masp_proofs::circuit::sapling::Spend;
-use masp_proofs::sapling::translation::{conv_zksync_params, create_zksync_proof};
 use rand_core::{RngCore, SeedableRng};
 use rand_xorshift::XorShiftRng;
+use masp_proofs::sapling::translation::bellperpson::{conv_bellperson_params, create_bellperson_proof};
 
 const TREE_DEPTH: usize = 32;
 
@@ -91,7 +91,7 @@ fn criterion_benchmark_bellman(c: &mut Criterion) {
     });
 }
 
-fn criterion_benchmark_arkworks(c: &mut Criterion) {
+fn criterion_benchmark_bellperson(c: &mut Criterion) {
     let mut rng = XorShiftRng::from_seed([
         0x59, 0x62, 0xbe, 0x3d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06, 0xbc,
         0xe5,
@@ -110,9 +110,9 @@ fn criterion_benchmark_arkworks(c: &mut Criterion) {
         &mut rng,
     )
     .unwrap();
-    let pk = conv_zksync_params(groth_params);
+    let pk =  conv_bellperson_params(&groth_params);
 
-    c.bench_function("sapling_zksync", |b| {
+    c.bench_function("sapling_bellperson", |b| {
         let value_commitment = AssetType::new(b"benchmark")
             .unwrap()
             .value_commitment(1, jubjub::Fr::random(&mut rng));
@@ -150,7 +150,7 @@ fn criterion_benchmark_arkworks(c: &mut Criterion) {
         .unwrap();
 
         b.iter(|| {
-            create_zksync_proof(
+            create_bellperson_proof(
                 Spend {
                     value_commitment: Some(value_commitment.clone()),
                     proof_generation_key: Some(proof_generation_key.clone()),
@@ -173,7 +173,7 @@ criterion_group!(
     targets = criterion_benchmark_bellman);
 
 criterion_group!(
-    name = benches_zksync;
+    name = benches_bellperson;
     config = Criterion::default().sample_size(10);
-    targets = criterion_benchmark_arkworks);
-criterion_main!(benches_bellman, benches_zksync);
+    targets = criterion_benchmark_bellperson);
+criterion_main!(benches_bellman, benches_bellperson);
