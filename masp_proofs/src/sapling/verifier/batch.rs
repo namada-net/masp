@@ -1,10 +1,38 @@
-use bellman::groth16;
-use bls12_381::Bls12;
+use bellman::groth16::{PreparedVerifyingKey, Proof};
+use bellman::{SynthesisError, groth16};
+use bls12_381::{Bls12, Engine};
 use group::GroupEncoding;
 use masp_primitives::transaction::components::sapling::{Authorized, Bundle};
 use rand_core::{CryptoRng, RngCore};
 
 use super::SaplingVerificationContextInner;
+
+/// Batch of zk proofs and public inputs
+#[derive(Default, Clone, Debug)]
+pub struct Batch {
+    /// The batch of zk proofs
+    proofs: Vec<Proof<Bls12>>,
+    /// The public inputs for each corresponding proofs
+    inputs: Vec<Vec<<Bls12 as Engine>::Fr>>,
+}
+
+impl Batch {
+    /// Verify all proofs in the batch
+    pub fn verify(
+        &self,
+        vk: &PreparedVerifyingKey<Bls12>,
+        rng: &mut impl RngCore,
+    ) -> Result<bool, SynthesisError> {
+        let proofs = self.proofs.iter().collect::<Vec<_>>();
+        groth16::verify_proofs_batch(vk, rng, proofs.as_slice(), self.inputs.as_slice())
+    }
+
+    /// Add a proof to a batch
+    pub fn queue(&mut self, proof: Proof<Bls12>, inputs: Vec<<Bls12 as Engine>::Fr>) {
+        self.proofs.push(proof);
+        self.inputs.push(inputs);
+    }
+}
 
 /// Batch validation context for MASP/Sapling.
 ///
@@ -13,9 +41,9 @@ use super::SaplingVerificationContextInner;
 /// Signatures are verified assuming ZIP 216 is active.
 pub struct BatchValidator {
     bundles_added: bool,
-    spend_proofs: groth16::batch::Verifier<Bls12>,
-    convert_proofs: groth16::batch::Verifier<Bls12>,
-    output_proofs: groth16::batch::Verifier<Bls12>,
+    spend_proofs: Batch,
+    convert_proofs: Batch,
+    output_proofs: Batch,
     signatures: redjubjub::batch::Verifier,
 }
 
@@ -30,9 +58,9 @@ impl BatchValidator {
     pub fn new() -> Self {
         BatchValidator {
             bundles_added: false,
-            spend_proofs: groth16::batch::Verifier::new(),
-            convert_proofs: groth16::batch::Verifier::new(),
-            output_proofs: groth16::batch::Verifier::new(),
+            spend_proofs: Default::default(),
+            convert_proofs: Default::default(),
+            output_proofs: Default::default(),
             signatures: redjubjub::batch::Verifier::new(),
         }
     }
@@ -81,7 +109,7 @@ impl BatchValidator {
                     true
                 },
                 |this, proof, public_inputs| {
-                    this.spend_proofs.queue((proof, public_inputs.to_vec()));
+                    this.spend_proofs.queue(proof, public_inputs.to_vec());
                     true
                 },
             );
@@ -103,7 +131,7 @@ impl BatchValidator {
                 zkproof,
                 self,
                 |this, proof, public_inputs| {
-                    this.convert_proofs.queue((proof, public_inputs.to_vec()));
+                    this.convert_proofs.queue(proof, public_inputs.to_vec());
                     true
                 },
             );
@@ -132,7 +160,7 @@ impl BatchValidator {
                 epk,
                 zkproof,
                 |proof, public_inputs| {
-                    self.output_proofs.queue((proof, public_inputs.to_vec()));
+                    self.output_proofs.queue(proof, public_inputs.to_vec());
                     true
                 },
             );
@@ -184,24 +212,22 @@ impl BatchValidator {
             return false;
         }
 
-        #[cfg(feature = "multicore")]
-        let verify_proofs = |batch: groth16::batch::Verifier<Bls12>, vk| batch.verify_multicore(vk);
+        let prepared_spend_key = groth16::prepare_verifying_key(spend_vk);
+        let prepared_conv_key = groth16::prepare_verifying_key(convert_vk);
+        let prepared_out_key = groth16::prepare_verifying_key(output_vk);
+        let mut verify_proofs = |batch: &Batch, vk| batch.verify(vk, &mut rng);
 
-        #[cfg(not(feature = "multicore"))]
-        let mut verify_proofs =
-            |batch: groth16::batch::Verifier<Bls12>, vk| batch.verify(&mut rng, vk);
-
-        if verify_proofs(self.spend_proofs, spend_vk).is_err() {
+        if verify_proofs(&self.spend_proofs, &prepared_spend_key).is_err() {
             tracing::debug!("Spend proof batch validation failed");
             return false;
         }
 
-        if verify_proofs(self.convert_proofs, convert_vk).is_err() {
+        if verify_proofs(&self.convert_proofs, &prepared_conv_key).is_err() {
             tracing::debug!("Convert proof batch validation failed");
             return false;
         }
 
-        if verify_proofs(self.output_proofs, output_vk).is_err() {
+        if verify_proofs(&self.output_proofs, &prepared_out_key).is_err() {
             tracing::debug!("Output proof batch validation failed");
             return false;
         }

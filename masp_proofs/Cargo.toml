@@ -19,10 +19,10 @@ masp_primitives = { version = "2.0.0", path = "../masp_primitives" }
 
 # Dependencies exposed in a public API:
 # (Breaking upgrades to these require a breaking upgrade to this crate.)
-bellman = { version = "0.14", default-features = false, features = ["groth16"] }
-bls12_381 = { package = "nam-bls12_381", version = "0.8.1-nam.0" }
+bellman = { package = "bellperson", version = "0.26.0", features = ["groth16"] }
+bls12_381 = { package = "nam-bls12_381", path = "../../bls12_381" }
 group = "0.13"
-jubjub = { package = "nam-jubjub", version = "0.10.1-nam.0" }
+jubjub = { package = "nam-jubjub", path = "../../jubjub"}
 lazy_static = "1"
 minreq = { version = "2.11.0", features = ["https"], optional = true }
 rand_core = "0.6"
@@ -46,11 +46,10 @@ rand_xorshift = "0.3"
 pprof = { version = "0.14", features = ["criterion", "flamegraph"] }
 
 [features]
-default = ["local-prover", "multicore"]
+default = ["local-prover"]
 bundled-prover = []
 download-params = ["minreq", "directories"]
 local-prover = ["directories"]
-multicore = ["bellman/multicore"]
 embed-verifying-key = []
 benchmarks = []
 js = ["getrandom/js"]
