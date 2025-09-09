@@ -1,4 +1,4 @@
-use bellman::groth16::{PreparedVerifyingKey, Proof};
+use bellman::groth16::{PreparedVerifyingKey, Proof, prepare_verifying_key};
 use bellman::{SynthesisError, groth16};
 use bls12_381::Bls12;
 use group::GroupEncoding;
@@ -248,35 +248,32 @@ impl BatchValidator {
     }
 
     /// Verify the spend proofs Intended for testing purposes only.
-    pub fn verify_spend_proofs(
+    pub fn verify_spend_proofs<R: RngCore>(
         self,
         spend_vk: &groth16::VerifyingKey<Bls12>,
-    ) -> Result<(), bellman::VerificationError> {
-        #[cfg(feature = "multicore")]
-        return self.spend_proofs.verify_multicore(spend_vk);
-        #[cfg(not(feature = "multicore"))]
-        return self.spend_proofs.verify(spend_vk);
+        rng: &mut R,
+    ) -> Result<bool, bellman::SynthesisError> {
+        let prepared = prepare_verifying_key(spend_vk);
+        self.spend_proofs.verify(&prepared, rng)
     }
 
     /// Verify the convert proofs. Intended for testing purposes only.
-    pub fn verify_convert_proofs(
+    pub fn verify_convert_proofs<R: RngCore>(
         self,
         convert_vk: &groth16::VerifyingKey<Bls12>,
-    ) -> Result<(), bellman::VerificationError> {
-        #[cfg(feature = "multicore")]
-        return self.convert_proofs.verify_multicore(convert_vk);
-        #[cfg(not(feature = "multicore"))]
-        return self.convert_proofs.verify(convert_vk);
+        rng: &mut R,
+    ) -> Result<bool, bellman::SynthesisError> {
+        let prepared = prepare_verifying_key(convert_vk);
+        self.convert_proofs.verify(&prepared, rng)
     }
 
     /// Verify the output proofs. Intended for testing purposes only.
-    pub fn verify_output_proofs(
+    pub fn verify_output_proofs<R: RngCore>(
         self,
         output_vk: &groth16::VerifyingKey<Bls12>,
-    ) -> Result<(), bellman::VerificationError> {
-        #[cfg(feature = "multicore")]
-        return self.output_proofs.verify_multicore(output_vk);
-        #[cfg(not(feature = "multicore"))]
-        return self.output_proofs.verify(output_vk);
+        rng: &mut R,
+    ) -> Result<bool, bellman::SynthesisError> {
+        let prepared = prepare_verifying_key(output_vk);
+        self.output_proofs.verify(&prepared, rng)
     }
 }
