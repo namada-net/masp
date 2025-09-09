@@ -1,8 +1,9 @@
 use bellman::groth16::{PreparedVerifyingKey, Proof};
 use bellman::{SynthesisError, groth16};
-use bls12_381::{Bls12, Engine};
+use bls12_381::Bls12;
 use group::GroupEncoding;
 use masp_primitives::transaction::components::sapling::{Authorized, Bundle};
+use pairing::Engine;
 use rand_core::{CryptoRng, RngCore};
 
 use super::SaplingVerificationContextInner;

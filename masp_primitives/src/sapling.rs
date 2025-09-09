@@ -30,7 +30,7 @@ use subtle::{Choice, ConstantTimeEq, CtOption};
 
 use crate::{
     asset_type::AssetType,
-    constants::{self, SPENDING_KEY_GENERATOR},
+    constants::{self, spending_key_generator},
     keys::prf_expand,
     merkle_tree::{HashSer, Hashable},
     transaction::components::amount::MAX_MONEY,
@@ -183,7 +183,7 @@ pub(crate) fn spend_sig_internal<R: RngCore>(
     let rsk = ask.randomize(ar);
 
     // We compute `rk` from there (needed for key prefixing)
-    let rk = PublicKey::from_private(&rsk, SPENDING_KEY_GENERATOR);
+    let rk = PublicKey::from_private(&rsk, spending_key_generator());
 
     // Compute the signature's message for rk/spend_auth_sig
     let mut data_to_be_signed = [0u8; 64];
@@ -191,7 +191,7 @@ pub(crate) fn spend_sig_internal<R: RngCore>(
     data_to_be_signed[32..64].copy_from_slice(&sighash[..]);
 
     // Do the signing
-    rsk.sign(&data_to_be_signed, rng, SPENDING_KEY_GENERATOR)
+    rsk.sign(&data_to_be_signed, rng, spending_key_generator())
 }
 
 #[derive(Clone)]
@@ -204,7 +204,7 @@ pub struct ValueCommitment {
 impl ValueCommitment {
     pub fn commitment(&self) -> jubjub::SubgroupPoint {
         (CofactorGroup::clear_cofactor(&self.asset_generator) * jubjub::Fr::from(self.value))
-            + (constants::VALUE_COMMITMENT_RANDOMNESS_GENERATOR * self.randomness)
+            + (constants::value_commitment_randomness_generator() * self.randomness)
     }
 }
 
@@ -218,7 +218,7 @@ impl ProofGenerationKey {
     pub fn to_viewing_key(&self) -> ViewingKey {
         ViewingKey {
             ak: self.ak,
-            nk: NullifierDerivingKey(constants::PROOF_GENERATION_KEY_GENERATOR * self.nsk),
+            nk: NullifierDerivingKey(constants::proof_generation_key_generator() * self.nsk),
         }
     }
 }
@@ -332,7 +332,7 @@ impl Hash for ViewingKey {
 
 impl ViewingKey {
     pub fn rk(&self, ar: jubjub::Fr) -> jubjub::SubgroupPoint {
-        self.ak + constants::SPENDING_KEY_GENERATOR * ar
+        self.ak + constants::spending_key_generator() * ar
     }
 
     pub fn ivk(&self) -> SaplingIvk {
@@ -789,7 +789,7 @@ impl Note {
     pub fn uncommitted() -> bls12_381::Scalar {
         // The smallest u-coordinate that is not on the curve
         // is one.
-        bls12_381::Scalar::one()
+        bls12_381::Scalar::ONE
     }
 
     /// Computes the note commitment, returning the full point.
@@ -820,7 +820,7 @@ impl Note {
         );
 
         // Compute final commitment
-        (constants::NOTE_COMMITMENT_RANDOMNESS_GENERATOR * self.rcm()) + hash_of_contents
+        (constants::note_commitment_randomness_generator() * self.rcm()) + hash_of_contents
     }
 
     /// Computes the nullifier given the nullifier deriving key and
@@ -828,7 +828,7 @@ impl Note {
     pub fn nf(&self, nk: &NullifierDerivingKey, position: u64) -> Nullifier {
         // Compute rho = cm + position.G
         let rho = self.cm_full_point()
-            + (constants::NULLIFIER_POSITION_GENERATOR * jubjub::Fr::from(position));
+            + (constants::nullifier_position_generator() * jubjub::Fr::from(position));
 
         // Compute nf = BLAKE2s(nk | rho)
         Nullifier::from_slice(

@@ -2,7 +2,7 @@ use bellman::groth16::{PreparedVerifyingKey, Proof, verify_proof};
 use bls12_381::Bls12;
 use group::GroupEncoding;
 use masp_primitives::{
-    constants::{SPENDING_KEY_GENERATOR, VALUE_COMMITMENT_RANDOMNESS_GENERATOR},
+    constants::{spending_key_generator, value_commitment_randomness_generator},
     sapling::redjubjub::{PublicKey, Signature},
     transaction::components::I128Sum,
 };
@@ -52,7 +52,7 @@ impl SaplingVerificationContext {
                 rk.verify_with_zip216(
                     &msg,
                     &spend_auth_sig,
-                    SPENDING_KEY_GENERATOR,
+                    spending_key_generator(),
                     zip216_enabled,
                 )
             },
@@ -116,7 +116,7 @@ impl SaplingVerificationContext {
                 bvk.verify_with_zip216(
                     &data_to_be_signed,
                     &binding_sig,
-                    VALUE_COMMITMENT_RANDOMNESS_GENERATOR,
+                    value_commitment_randomness_generator(),
                     self.zip216_enabled,
                 )
             },

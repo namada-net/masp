@@ -19,12 +19,14 @@ masp_primitives = { version = "2.0.0", path = "../masp_primitives" }
 
 # Dependencies exposed in a public API:
 # (Breaking upgrades to these require a breaking upgrade to this crate.)
-bellman = { package = "bellperson", version = "0.26.0", features = ["groth16"] }
-bls12_381 = { package = "nam-bls12_381", path = "../../bls12_381" }
+bellman = { package = "nam-bellperson", version="0.26.0-nam.0", features = ["groth16"] }
+bls12_381 = {package = "nam-blstrs", version = "0.7.1-nam.0" }
+ff = "0.13"
 group = "0.13"
-jubjub = { package = "nam-jubjub", path = "../../jubjub"}
+jubjub = { package = "nam-jubjub", version = "0.10.1-nam.1" }
 lazy_static = "1"
 minreq = { version = "2.11.0", features = ["https"], optional = true }
+pairing = "0.23.0"
 rand_core = "0.6"
 tracing = "0.1"
 

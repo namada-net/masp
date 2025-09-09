@@ -43,11 +43,11 @@ num-traits = { package = "nam-num-traits", version = "0.2.20-nam.0" }
 subtle = "2.2.3"
 
 # - Shielded protocols
-bls12_381 = { package = "nam-bls12_381", path = "../../bls12_381"}
+bls12_381 = {package = "nam-blstrs", version = "0.7.1-nam.0" }
 ff = "0.13"
 group = { version = "0.13", features = ["wnaf-memuse"] }
 incrementalmerkletree = { version = "0.8.2", features = ["legacy-api"] }
-jubjub = { package = "nam-jubjub", path = "../../jubjub" }
+jubjub = { package = "nam-jubjub", version = "0.10.1-nam.1" }
 nonempty = "0.11"
 
 # - Static constants
@@ -92,7 +92,7 @@ rand_xorshift = "0.3"
 transparent-inputs = []
 test-dependencies = ["proptest"]
 default = ["transparent-inputs"]
-arbitrary = ["dep:arbitrary", "masp_note_encryption/arbitrary", "bls12_381/arbitrary", "jubjub/arbitrary"]
+arbitrary = ["dep:arbitrary", "masp_note_encryption/arbitrary", "jubjub/arbitrary", "bls12_381/arbitrary"]
 
 [badges]
 maintenance = { status = "actively-developed" }

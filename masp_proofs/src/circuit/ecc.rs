@@ -12,9 +12,9 @@ use bellman::gadgets::lookup::lookup3_xy;
 
 use bellman::gadgets::boolean::Boolean;
 
+use crate::constants::{FixedGenerator, edward_d, montgomery_a, montgomery_scale};
 use group::Curve;
-
-use crate::constants::{EDWARDS_D, FixedGenerator, MONTGOMERY_A, MONTGOMERY_SCALE};
+use group::ff::Field;
 
 #[derive(Clone)]
 pub struct EdwardsPoint {
@@ -157,7 +157,7 @@ impl EdwardsPoint {
             if *condition.get_value().get()? {
                 Ok(*self.u.get_value().get()?)
             } else {
-                Ok(bls12_381::Scalar::zero())
+                Ok(bls12_381::Scalar::ZERO)
             }
         })?;
 
@@ -168,7 +168,7 @@ impl EdwardsPoint {
         cs.enforce(
             || "u' computation",
             |lc| lc + self.u.get_variable(),
-            |_| condition.lc(one, bls12_381::Scalar::one()),
+            |_| condition.lc(one, bls12_381::Scalar::ONE),
             |lc| lc + u_prime.get_variable(),
         );
 
@@ -177,7 +177,7 @@ impl EdwardsPoint {
             if *condition.get_value().get()? {
                 Ok(*self.v.get_value().get()?)
             } else {
-                Ok(bls12_381::Scalar::one())
+                Ok(bls12_381::Scalar::ONE)
             }
         })?;
 
@@ -187,8 +187,8 @@ impl EdwardsPoint {
         cs.enforce(
             || "v' computation",
             |lc| lc + self.v.get_variable(),
-            |_| condition.lc(one, bls12_381::Scalar::one()),
-            |lc| lc + v_prime.get_variable() - &condition.not().lc(one, bls12_381::Scalar::one()),
+            |_| condition.lc(one, bls12_381::Scalar::ONE),
+            |lc| lc + v_prime.get_variable() - &condition.not().lc(one, bls12_381::Scalar::ONE),
         );
 
         Ok(EdwardsPoint {
@@ -266,7 +266,7 @@ impl EdwardsPoint {
             || "on curve check",
             |lc| lc - u2.get_variable() + v2.get_variable(),
             |lc| lc + one,
-            |lc| lc + one + (EDWARDS_D, u2v2.get_variable()),
+            |lc| lc + one + (edward_d(), u2v2.get_variable()),
         );
 
         Ok(EdwardsPoint {
@@ -306,14 +306,14 @@ impl EdwardsPoint {
         // Compute C = d*A*A
         let c = AllocatedNum::alloc(cs.namespace(|| "C"), || {
             let mut t0 = a.get_value().get()?.square();
-            t0.mul_assign(EDWARDS_D);
+            t0.mul_assign(edward_d());
 
             Ok(t0)
         })?;
 
         cs.enforce(
             || "C computation",
-            |lc| lc + (EDWARDS_D, a.get_variable()),
+            |lc| lc + (edward_d(), a.get_variable()),
             |lc| lc + a.get_variable(),
             |lc| lc + c.get_variable(),
         );
@@ -323,7 +323,7 @@ impl EdwardsPoint {
             let mut t0 = *a.get_value().get()?;
             t0 = t0.double();
 
-            let mut t1 = bls12_381::Scalar::one();
+            let mut t1 = bls12_381::Scalar::ONE;
             t1.add_assign(c.get_value().get()?);
 
             let res = t1.invert().map(|t1| t0 * t1);
@@ -349,7 +349,7 @@ impl EdwardsPoint {
             t0 = t0.double().neg();
             t0.add_assign(t.get_value().get()?);
 
-            let mut t1 = bls12_381::Scalar::one();
+            let mut t1 = bls12_381::Scalar::ONE;
             t1.sub_assign(c.get_value().get()?);
 
             let res = t1.invert().map(|t1| t0 * t1);
@@ -407,14 +407,14 @@ impl EdwardsPoint {
         let c = AllocatedNum::alloc(cs.namespace(|| "C"), || {
             let mut t0 = *a.get_value().get()?;
             t0.mul_assign(b.get_value().get()?);
-            t0.mul_assign(EDWARDS_D);
+            t0.mul_assign(edward_d());
 
             Ok(t0)
         })?;
 
         cs.enforce(
             || "C computation",
-            |lc| lc + (EDWARDS_D, a.get_variable()),
+            |lc| lc + (edward_d(), a.get_variable()),
             |lc| lc + b.get_variable(),
             |lc| lc + c.get_variable(),
         );
@@ -424,7 +424,7 @@ impl EdwardsPoint {
             let mut t0 = *a.get_value().get()?;
             t0.add_assign(b.get_value().get()?);
 
-            let mut t1 = bls12_381::Scalar::one();
+            let mut t1 = bls12_381::Scalar::ONE;
             t1.add_assign(c.get_value().get()?);
 
             let ret = t1.invert().map(|t1| t0 * t1);
@@ -449,7 +449,7 @@ impl EdwardsPoint {
             t0.sub_assign(a.get_value().get()?);
             t0.sub_assign(b.get_value().get()?);
 
-            let mut t1 = bls12_381::Scalar::one();
+            let mut t1 = bls12_381::Scalar::ONE;
             t1.sub_assign(c.get_value().get()?);
 
             let ret = t1.invert().map(|t1| t0 * t1);
@@ -487,7 +487,7 @@ impl MontgomeryPoint {
         // Compute u = (scale*x) / y
         let u = AllocatedNum::alloc(cs.namespace(|| "u"), || {
             let mut t0 = *self.x.get_value().get()?;
-            t0.mul_assign(MONTGOMERY_SCALE);
+            t0.mul_assign(montgomery_scale());
 
             let ret = self.y.get_value().get()?.invert().map(|invy| t0 * invy);
             if bool::from(ret.is_some()) {
@@ -499,17 +499,17 @@ impl MontgomeryPoint {
 
         cs.enforce(
             || "u computation",
-            |lc| lc + &self.y.lc(bls12_381::Scalar::one()),
+            |lc| lc + &self.y.lc(bls12_381::Scalar::ONE),
             |lc| lc + u.get_variable(),
-            |lc| lc + &self.x.lc(MONTGOMERY_SCALE),
+            |lc| lc + &self.x.lc(montgomery_scale()),
         );
 
         // Compute v = (x - 1) / (x + 1)
         let v = AllocatedNum::alloc(cs.namespace(|| "v"), || {
             let mut t0 = *self.x.get_value().get()?;
             let mut t1 = t0;
-            t0.sub_assign(&bls12_381::Scalar::one());
-            t1.add_assign(&bls12_381::Scalar::one());
+            t0.sub_assign(&bls12_381::Scalar::ONE);
+            t1.add_assign(&bls12_381::Scalar::ONE);
 
             let ret = t1.invert().map(|t1| t0 * t1);
             if bool::from(ret.is_some()) {
@@ -522,9 +522,9 @@ impl MontgomeryPoint {
         let one = CS::one();
         cs.enforce(
             || "v computation",
-            |lc| lc + &self.x.lc(bls12_381::Scalar::one()) + one,
+            |lc| lc + &self.x.lc(bls12_381::Scalar::ONE) + one,
             |lc| lc + v.get_variable(),
-            |lc| lc + &self.x.lc(bls12_381::Scalar::one()) - one,
+            |lc| lc + &self.x.lc(bls12_381::Scalar::ONE) - one,
         );
 
         Ok(EdwardsPoint { u, v })
@@ -562,15 +562,15 @@ impl MontgomeryPoint {
 
         cs.enforce(
             || "evaluate lambda",
-            |lc| lc + &other.x.lc(bls12_381::Scalar::one()) - &self.x.lc(bls12_381::Scalar::one()),
+            |lc| lc + &other.x.lc(bls12_381::Scalar::ONE) - &self.x.lc(bls12_381::Scalar::ONE),
             |lc| lc + lambda.get_variable(),
-            |lc| lc + &other.y.lc(bls12_381::Scalar::one()) - &self.y.lc(bls12_381::Scalar::one()),
+            |lc| lc + &other.y.lc(bls12_381::Scalar::ONE) - &self.y.lc(bls12_381::Scalar::ONE),
         );
 
         // Compute x'' = lambda^2 - A - x - x'
         let xprime = AllocatedNum::alloc(cs.namespace(|| "xprime"), || {
             let mut t0 = lambda.get_value().get()?.square();
-            t0.sub_assign(MONTGOMERY_A);
+            t0.sub_assign(montgomery_a());
             t0.sub_assign(self.x.get_value().get()?);
             t0.sub_assign(other.x.get_value().get()?);
 
@@ -584,9 +584,9 @@ impl MontgomeryPoint {
             |lc| lc + lambda.get_variable(),
             |lc| lc + lambda.get_variable(),
             |lc| {
-                lc + (MONTGOMERY_A, one)
-                    + &self.x.lc(bls12_381::Scalar::one())
-                    + &other.x.lc(bls12_381::Scalar::one())
+                lc + (montgomery_a(), one)
+                    + &self.x.lc(bls12_381::Scalar::ONE)
+                    + &other.x.lc(bls12_381::Scalar::ONE)
                     + xprime.get_variable()
             },
         );
@@ -605,9 +605,9 @@ impl MontgomeryPoint {
         // y' + y = lambda(x - x')
         cs.enforce(
             || "evaluate yprime",
-            |lc| lc + &self.x.lc(bls12_381::Scalar::one()) - xprime.get_variable(),
+            |lc| lc + &self.x.lc(bls12_381::Scalar::ONE) - xprime.get_variable(),
             |lc| lc + lambda.get_variable(),
-            |lc| lc + yprime.get_variable() + &self.y.lc(bls12_381::Scalar::one()),
+            |lc| lc + yprime.get_variable() + &self.y.lc(bls12_381::Scalar::ONE),
         );
 
         Ok(MontgomeryPoint {
@@ -732,7 +732,7 @@ mod test {
         for _ in 0..100 {
             let mut cs = TestConstraintSystem::<bls12_381::Scalar>::new();
 
-            let p = masp_primitives::constants::NOTE_COMMITMENT_RANDOMNESS_GENERATOR;
+            let p = masp_primitives::constants::note_commitment_randomness_generator();
             let s = jubjub::Fr::random(&mut rng);
             let q = jubjub::ExtendedPoint::from(p * s).to_affine();
             let (u1, v1) = (q.get_u(), q.get_v());
@@ -862,13 +862,13 @@ mod test {
                 assert_eq!(q.u.get_value().unwrap(), u0);
                 assert_eq!(q.v.get_value().unwrap(), v0);
 
-                cs.set("select/v'/num", bls12_381::Scalar::one());
+                cs.set("select/v'/num", bls12_381::Scalar::ONE);
                 assert_eq!(cs.which_is_unsatisfied().unwrap(), "select/v' computation");
-                cs.set("select/u'/num", bls12_381::Scalar::zero());
+                cs.set("select/u'/num", bls12_381::Scalar::ZERO);
                 assert_eq!(cs.which_is_unsatisfied().unwrap(), "select/u' computation");
             } else {
-                assert_eq!(q.u.get_value().unwrap(), bls12_381::Scalar::zero());
-                assert_eq!(q.v.get_value().unwrap(), bls12_381::Scalar::one());
+                assert_eq!(q.u.get_value().unwrap(), bls12_381::Scalar::ZERO);
+                assert_eq!(q.v.get_value().unwrap(), bls12_381::Scalar::ONE);
 
                 cs.set("select/v'/num", u0);
                 assert_eq!(cs.which_is_unsatisfied().unwrap(), "select/v' computation");
@@ -1063,7 +1063,7 @@ mod test {
         .unwrap();
         let largest_small_subgroup_order = jubjub::Fr::from(8);
 
-        let (zero_u, zero_v) = (bls12_381::Scalar::zero(), bls12_381::Scalar::one());
+        let (zero_u, zero_v) = (bls12_381::Scalar::ZERO, bls12_381::Scalar::ONE);
 
         // generator for jubjub
         let (u, v) = (

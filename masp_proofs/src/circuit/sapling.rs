@@ -17,6 +17,7 @@ use crate::constants::{
     PROOF_GENERATION_KEY_GENERATOR, SPENDING_KEY_GENERATOR, VALUE_COMMITMENT_RANDOMNESS_GENERATOR,
 };
 use bellman::gadgets::{Assignment, blake2s, boolean, multipack, num};
+use group::ff::Field;
 use itertools::multizip;
 
 pub const TREE_DEPTH: usize = SAPLING_COMMITMENT_TREE_DEPTH;
@@ -255,7 +256,7 @@ impl Circuit<bls12_381::Scalar> for Spend {
 
             // Compute the note's value as a linear combination
             // of the bits.
-            let mut coeff = bls12_381::Scalar::one();
+            let mut coeff = bls12_381::Scalar::ONE;
             for bit in &value_bits {
                 value_num = value_num.add_bool_with_coeff(CS::one(), bit, coeff);
                 coeff = coeff.double();
@@ -376,7 +377,7 @@ impl Circuit<bls12_381::Scalar> for Spend {
             cs.enforce(
                 || "conditionally enforce correct root",
                 |lc| lc + cur.get_variable() - rt.get_variable(),
-                |lc| lc + &value_num.lc(bls12_381::Scalar::one()),
+                |lc| lc + &value_num.lc(bls12_381::Scalar::ONE),
                 |lc| lc,
             );
 
@@ -738,7 +739,7 @@ fn test_input_circuit_with_bls12_381() {
             }
 
             assert_eq!(cs.num_inputs(), 8);
-            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::one());
+            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::ONE);
             assert_eq!(cs.get_input(1, "rk/u/input variable"), rk.get_u());
             assert_eq!(cs.get_input(2, "rk/v/input variable"), rk.get_v());
             assert_eq!(
@@ -928,7 +929,7 @@ fn test_input_circuit_with_bls12_381_external_test_vectors() {
             assert_eq!(cs.get("randomization of note commitment/u3/num"), cmu);
 
             assert_eq!(cs.num_inputs(), 8);
-            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::one());
+            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::ONE);
             assert_eq!(cs.get_input(1, "rk/u/input variable"), rk.get_u());
             assert_eq!(cs.get_input(2, "rk/v/input variable"), rk.get_v());
             assert_eq!(
@@ -1042,7 +1043,7 @@ fn test_output_circuit_with_bls12_381() {
                     .to_affine();
 
             assert_eq!(cs.num_inputs(), 6);
-            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::one());
+            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::ONE);
             assert_eq!(
                 cs.get_input(1, "value commitment/commitment point/u/input variable"),
                 expected_value_commitment.get_u()

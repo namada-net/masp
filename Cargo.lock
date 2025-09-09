@@ -164,35 +164,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bellperson"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c41bd83b8437856d267eb311de13dcd9bff9077cc5ba35c7ec886070dea8a45"
-dependencies = [
- "bellpepper-core",
- "bincode",
- "blake2s_simd",
- "blstrs",
- "byteorder",
- "crossbeam-channel",
- "digest",
- "ec-gpu",
- "ec-gpu-gen",
- "ff",
- "group",
- "log",
- "memmap2 0.5.10",
- "pairing",
- "rand",
- "rand_core",
- "rayon",
- "rustversion",
- "serde",
- "sha2",
- "thiserror 1.0.60",
-]
-
-[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -293,34 +264,6 @@ checksum = "d7bc6d6292be3a19e6379786dac800f551e5865a5bb51ebbe3064ab80433f403"
 dependencies = [
  "ff",
  "rand_core",
- "subtle",
-]
-
-[[package]]
-name = "blst"
-version = "0.3.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fd49896f12ac9b6dcd7a5998466b9b58263a695a3dd1ecc1aaca2e12a90b080"
-dependencies = [
- "cc",
- "glob",
- "threadpool",
- "zeroize",
-]
-
-[[package]]
-name = "blstrs"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a8a8ed6fefbeef4a8c7b460e4110e12c5e22a5b7cf32621aae6ad650c4dcf29"
-dependencies = [
- "blst",
- "byte-slice-cast",
- "ff",
- "group",
- "pairing",
- "rand_core",
- "serde",
  "subtle",
 ]
 
@@ -1225,6 +1168,7 @@ dependencies = [
  "chacha20",
  "chacha20poly1305",
  "cipher",
+ "nam-blstrs",
  "rand_core",
  "subtle",
 ]
@@ -1252,7 +1196,7 @@ dependencies = [
  "lazy_static",
  "masp_note_encryption",
  "memuse",
- "nam-bls12_381",
+ "nam-blstrs",
  "nam-jubjub",
  "nam-num-traits",
  "nonempty 0.11.0",
@@ -1269,20 +1213,22 @@ dependencies = [
 name = "masp_proofs"
 version = "2.0.0"
 dependencies = [
- "bellperson",
  "blake2b_simd",
  "byteorder",
  "criterion",
  "directories",
+ "ff",
  "getrandom",
  "group",
  "itertools 0.14.0",
  "lazy_static",
  "masp_primitives",
  "minreq",
- "nam-bls12_381",
+ "nam-bellperson",
+ "nam-blstrs",
  "nam-jubjub",
  "nam-redjubjub",
+ "pairing",
  "pprof",
  "rand_core",
  "rand_xorshift",
@@ -1342,27 +1288,75 @@ dependencies = [
 ]
 
 [[package]]
-name = "nam-bls12_381"
-version = "0.8.1-nam.0"
+name = "nam-bellperson"
+version = "0.26.0-nam.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7e2cc63ad59717efe6f3c4640df556bfab17a1190389f6752ad7678b6ff8a10"
 dependencies = [
- "arbitrary",
- "bellperson",
+ "bellpepper-core",
+ "bincode",
+ "blake2s_simd",
+ "byteorder",
+ "crossbeam-channel",
+ "digest",
+ "ec-gpu",
+ "ec-gpu-gen",
  "ff",
  "group",
+ "log",
+ "memmap2 0.5.10",
+ "nam-blstrs",
+ "pairing",
+ "rand",
+ "rand_core",
+ "rayon",
+ "rustversion",
+ "serde",
+ "sha2",
+ "thiserror 1.0.60",
+]
+
+[[package]]
+name = "nam-blst"
+version = "0.3.15-nam.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc1632631c6e2ff973612128336180d9002de7137df421633e7c4d7e8a2d6c3d"
+dependencies = [
+ "arbitrary",
+ "cc",
+ "glob",
+ "threadpool",
+ "zeroize",
+]
+
+[[package]]
+name = "nam-blstrs"
+version = "0.7.1-nam.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9b31595611bdfcbe0880c411d325e6aae7bade26fcdc5dc4cc8aeec54a7db06"
+dependencies = [
+ "arbitrary",
+ "byte-slice-cast",
+ "ff",
+ "group",
+ "nam-blst",
  "pairing",
  "rand_core",
+ "serde",
  "subtle",
 ]
 
 [[package]]
 name = "nam-jubjub"
-version = "0.10.1-nam.0"
+version = "0.10.1-nam.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ca0332b3fddf1e07e6fa7867844cdd5711a2128baa21ada02a0fadd3594ab8a"
 dependencies = [
  "arbitrary",
  "bitvec",
  "ff",
  "group",
- "nam-bls12_381",
+ "nam-blstrs",
  "rand_core",
  "subtle",
 ]

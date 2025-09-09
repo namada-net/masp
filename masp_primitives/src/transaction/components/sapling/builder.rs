@@ -694,11 +694,13 @@ impl<P: BorshSchema, Key: BorshSchema> BorshSchema for SaplingBuilder<P, Key> {
 impl<P: BorshSerialize, Key: BorshSerialize> BorshSerialize for SaplingBuilder<P, Key> {
     fn serialize<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
         self.params.serialize(writer)?;
-        self.spend_anchor.map(|x| x.to_bytes()).serialize(writer)?;
+        self.spend_anchor
+            .map(|x| x.to_bytes_le())
+            .serialize(writer)?;
         self.target_height.serialize(writer)?;
         self.value_balance.serialize(writer)?;
         self.convert_anchor
-            .map(|x| x.to_bytes())
+            .map(|x| x.to_bytes_le())
             .serialize(writer)?;
         self.spends.serialize(writer)?;
         self.converts.serialize(writer)?;
@@ -710,14 +712,14 @@ impl<P: BorshDeserialize, Key: BorshDeserialize> BorshDeserialize for SaplingBui
     fn deserialize_reader<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
         let params = P::deserialize_reader(reader)?;
         let spend_anchor: Option<Option<_>> = Option::<[u8; 32]>::deserialize_reader(reader)?
-            .map(|x| bls12_381::Scalar::from_bytes(&x).into());
+            .map(|x| bls12_381::Scalar::from_bytes_le(&x).into());
         let spend_anchor = spend_anchor
             .map(|x| x.ok_or_else(|| std::io::Error::from(std::io::ErrorKind::InvalidData)))
             .transpose()?;
         let target_height = BlockHeight::deserialize_reader(reader)?;
         let value_balance = I128Sum::deserialize_reader(reader)?;
         let convert_anchor: Option<Option<_>> = Option::<[u8; 32]>::deserialize_reader(reader)?
-            .map(|x| bls12_381::Scalar::from_bytes(&x).into());
+            .map(|x| bls12_381::Scalar::from_bytes_le(&x).into());
         let convert_anchor = convert_anchor
             .map(|x| x.ok_or_else(|| std::io::Error::from(std::io::ErrorKind::InvalidData)))
             .transpose()?;

@@ -122,6 +122,9 @@ enum NoteValidity {
     Invalid,
 }
 
+pub type ExtractedCommitment = bls12_381::Scalar;
+pub type ExtractedCommitmentBytes = [u8; 32];
+
 /// Trait that encapsulates protocol-specific note encryption types and logic.
 ///
 /// This trait enables most of the note encryption logic to be shared between Sapling and
@@ -138,8 +141,6 @@ pub trait Domain {
     type IncomingViewingKey;
     type OutgoingViewingKey;
     type ValueCommitment;
-    type ExtractedCommitment;
-    type ExtractedCommitmentBytes: Eq + for<'a> From<&'a Self::ExtractedCommitment>;
     type Memo;
 
     /// Derives the `EphemeralSecretKey` corresponding to this note.
@@ -209,7 +210,7 @@ pub trait Domain {
     fn derive_ock(
         ovk: &Self::OutgoingViewingKey,
         cv: &Self::ValueCommitment,
-        cmstar_bytes: &Self::ExtractedCommitmentBytes,
+        cmstar_bytes: &ExtractedCommitmentBytes,
         ephemeral_key: &EphemeralKeyBytes,
     ) -> OutgoingCipherKey;
 
@@ -229,7 +230,7 @@ pub trait Domain {
     fn epk(ephemeral_key: &EphemeralKeyBytes) -> Option<Self::EphemeralPublicKey>;
 
     /// Derives the `ExtractedCommitment` for this note.
-    fn cmstar(note: &Self::Note) -> Self::ExtractedCommitment;
+    fn cmstar(note: &Self::Note) -> ExtractedCommitment;
 
     /// Parses the given note plaintext from the recipient's perspective.
     ///
@@ -349,7 +350,7 @@ pub trait ShieldedOutput<D: Domain, const CIPHERTEXT_SIZE: usize> {
     fn ephemeral_key(&self) -> EphemeralKeyBytes;
 
     /// Exposes the `cmu_bytes` or `cmx_bytes` field of the output.
-    fn cmstar_bytes(&self) -> D::ExtractedCommitmentBytes;
+    fn cmstar_bytes(&self) -> ExtractedCommitmentBytes;
 
     /// Exposes the note ciphertext of the output.
     fn enc_ciphertext(&self) -> &[u8; CIPHERTEXT_SIZE];
@@ -450,11 +451,11 @@ impl<D: Domain> NoteEncryption<D> {
     pub fn encrypt_outgoing_plaintext<R: RngCore>(
         &self,
         cv: &D::ValueCommitment,
-        cmstar: &D::ExtractedCommitment,
+        cmstar: &ExtractedCommitment,
         rng: &mut R,
     ) -> [u8; OUT_CIPHERTEXT_SIZE] {
         let (ock, input) = if let Some(ovk) = &self.ovk {
-            let ock = D::derive_ock(ovk, cv, &cmstar.into(), &D::epk_bytes(&self.epk));
+            let ock = D::derive_ock(ovk, cv, &cmstar.to_bytes_le(), &D::epk_bytes(&self.epk));
             let input = D::outgoing_plaintext_bytes(&self.note, &self.esk);
 
             (ock, input)
@@ -539,7 +540,7 @@ fn parse_note_plaintext_without_memo_ivk<D: Domain>(
     domain: &D,
     ivk: &D::IncomingViewingKey,
     ephemeral_key: &EphemeralKeyBytes,
-    cmstar_bytes: &D::ExtractedCommitmentBytes,
+    cmstar_bytes: &ExtractedCommitmentBytes,
     plaintext: &[u8],
 ) -> Option<(D::Note, D::Recipient)> {
     let (note, to) = domain.parse_note_plaintext_without_memo_ivk(ivk, plaintext)?;
@@ -554,9 +555,9 @@ fn parse_note_plaintext_without_memo_ivk<D: Domain>(
 fn check_note_validity<D: Domain>(
     note: &D::Note,
     ephemeral_key: &EphemeralKeyBytes,
-    cmstar_bytes: &D::ExtractedCommitmentBytes,
+    cmstar_bytes: &ExtractedCommitmentBytes,
 ) -> NoteValidity {
-    if &D::ExtractedCommitmentBytes::from(&D::cmstar(note)) == cmstar_bytes {
+    if &D::cmstar(note).to_bytes_le() == cmstar_bytes {
         if let Some(derived_esk) = D::derive_esk(note) {
             if D::epk_bytes(&D::ka_derive_public(note, &derived_esk))
                 .ct_eq(ephemeral_key)
