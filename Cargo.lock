@@ -1289,9 +1289,9 @@ dependencies = [
 
 [[package]]
 name = "nam-bellperson"
-version = "0.26.0-nam.0"
+version = "0.26.0-nam.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7e2cc63ad59717efe6f3c4640df556bfab17a1190389f6752ad7678b6ff8a10"
+checksum = "00386205f6e890410876790fa2f733e87527b41bb5e0050eb033325bf6873daf"
 dependencies = [
  "bellpepper-core",
  "bincode",
