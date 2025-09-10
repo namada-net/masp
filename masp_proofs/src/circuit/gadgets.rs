@@ -13,8 +13,8 @@ where
     CS: ConstraintSystem<Scalar>,
 {
     // Deconstruct in big-endian bit order
-    let values = match value {
-        Some(ref value) => {
+    let values = match &value {
+        Some(value) => {
             let field_char = F::char_le_bits();
             let mut field_char = field_char.into_iter().rev();
 
