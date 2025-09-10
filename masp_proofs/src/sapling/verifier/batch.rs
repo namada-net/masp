@@ -1,3 +1,5 @@
+#[cfg(feature = "benchmarks")]
+use bellman::groth16::prepare_verifying_key;
 use bellman::groth16::{PreparedVerifyingKey, Proof};
 use bellman::{SynthesisError, groth16};
 use bls12_381::Bls12;
