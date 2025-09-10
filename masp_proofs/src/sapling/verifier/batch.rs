@@ -1,4 +1,4 @@
-use bellman::groth16::{PreparedVerifyingKey, Proof, prepare_verifying_key};
+use bellman::groth16::{PreparedVerifyingKey, Proof};
 use bellman::{SynthesisError, groth16};
 use bls12_381::Bls12;
 use group::GroupEncoding;
