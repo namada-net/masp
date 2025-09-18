@@ -15,11 +15,11 @@ categories = ["cryptography::cryptocurrencies"]
 all-features = true
 
 [dependencies]
-masp_primitives = { version = "3.0.4", path = "../masp_primitives" }
+masp_primitives = { version = "3.0.45, path = "../masp_primitives" }
 
 # Dependencies exposed in a public API:
 # (Breaking upgrades to these require a breaking upgrade to this crate.)
-bellman = { package = "nam-bellperson", version="0.26.1-nam.2", features = ["groth16"] }
+bellman = { package = "nam-bellperson", version="0.26.2-nam.2", features = ["groth16"] }
 bls12_381 = {package = "nam-blstrs", version = "0.7.1-nam.0" }
 ff = "0.13"
 group = "0.13"
