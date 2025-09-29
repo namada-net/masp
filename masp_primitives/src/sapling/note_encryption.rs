@@ -1,20 +1,21 @@
 //! Implementation of in-band secret distribution for MASP transactions.
+use std::convert::TryInto;
+
 use blake2b_simd::{Hash as Blake2bHash, Params as Blake2bParams};
 use byteorder::{LittleEndian, WriteBytesExt};
 use ff::PrimeField;
 use group::{GroupEncoding, WnafBase, WnafScalar, cofactor::CofactorGroup};
 use jubjub::{AffinePoint, ExtendedPoint};
-use memuse::DynamicUsage;
-use std::convert::TryInto;
-
-use crate::asset_type::AssetType;
 use masp_note_encryption::{
     BatchDomain, COMPACT_NOTE_SIZE, Domain, ENC_CIPHERTEXT_SIZE, EphemeralKeyBytes,
-    NOTE_PLAINTEXT_SIZE, NoteEncryption, NotePlaintextBytes, OUT_PLAINTEXT_SIZE, OutPlaintextBytes,
-    OutgoingCipherKey, ShieldedOutput, try_compact_note_decryption, try_note_decryption,
-    try_output_recovery_with_ock, try_output_recovery_with_ovk,
+    ExtractedCommitment, ExtractedCommitmentBytes, NOTE_PLAINTEXT_SIZE, NoteEncryption,
+    NotePlaintextBytes, OUT_PLAINTEXT_SIZE, OutPlaintextBytes, OutgoingCipherKey, ShieldedOutput,
+    try_compact_note_decryption, try_note_decryption, try_output_recovery_with_ock,
+    try_output_recovery_with_ovk,
 };
+use memuse::DynamicUsage;
 
+use crate::asset_type::AssetType;
 use crate::{
     consensus::{self, BlockHeight, NetworkUpgrade::MASP},
     memo::MemoBytes,
@@ -188,8 +189,6 @@ impl<P: consensus::Parameters> Domain for SaplingDomain<P> {
     type IncomingViewingKey = PreparedIncomingViewingKey;
     type OutgoingViewingKey = OutgoingViewingKey;
     type ValueCommitment = jubjub::ExtendedPoint;
-    type ExtractedCommitment = bls12_381::Scalar;
-    type ExtractedCommitmentBytes = [u8; 32];
     type Memo = MemoBytes;
 
     fn derive_esk(note: &Self::Note) -> Option<Self::EphemeralSecretKey> {
@@ -272,7 +271,7 @@ impl<P: consensus::Parameters> Domain for SaplingDomain<P> {
     fn derive_ock(
         ovk: &Self::OutgoingViewingKey,
         cv: &Self::ValueCommitment,
-        cmu_bytes: &Self::ExtractedCommitmentBytes,
+        cmu_bytes: &ExtractedCommitmentBytes,
         epk: &EphemeralKeyBytes,
     ) -> OutgoingCipherKey {
         prf_ock(ovk, cv, cmu_bytes, epk)
@@ -326,7 +325,7 @@ impl<P: consensus::Parameters> Domain for SaplingDomain<P> {
         })
     }
 
-    fn cmstar(note: &Self::Note) -> Self::ExtractedCommitment {
+    fn cmstar(note: &Self::Note) -> ExtractedCommitment {
         note.cmu()
     }
 

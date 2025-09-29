@@ -5,7 +5,7 @@
 //! [section 4.2.2]: https://zips.z.cash/protocol/protocol.pdf#saplingkeycomponents
 
 use crate::{
-    constants::{PROOF_GENERATION_KEY_GENERATOR, SPENDING_KEY_GENERATOR},
+    constants::{proof_generation_key_generator, spending_key_generator},
     keys::prf_expand,
 };
 use borsh::BorshSchema;
@@ -73,7 +73,7 @@ impl ExpandedSpendingKey {
 
     pub fn proof_generation_key(&self) -> ProofGenerationKey {
         ProofGenerationKey {
-            ak: SPENDING_KEY_GENERATOR * self.ask,
+            ak: spending_key_generator() * self.ask,
             nsk: self.nsk,
         }
     }
@@ -161,8 +161,8 @@ impl FullViewingKey {
     pub fn from_expanded_spending_key(expsk: &ExpandedSpendingKey) -> Self {
         FullViewingKey {
             vk: ViewingKey {
-                ak: SPENDING_KEY_GENERATOR * expsk.ask,
-                nk: NullifierDerivingKey(PROOF_GENERATION_KEY_GENERATOR * expsk.nsk),
+                ak: spending_key_generator() * expsk.ask,
+                nk: NullifierDerivingKey(proof_generation_key_generator() * expsk.nsk),
             },
             ovk: expsk.ovk,
         }
@@ -292,7 +292,7 @@ mod tests {
     use group::{Group, GroupEncoding};
 
     use super::FullViewingKey;
-    use crate::constants::SPENDING_KEY_GENERATOR;
+    use crate::constants::spending_key_generator;
 
     #[test]
     fn ak_must_be_prime_order() {
@@ -310,7 +310,7 @@ mod tests {
         );
 
         // Set ak to a basepoint.
-        let basepoint = SPENDING_KEY_GENERATOR;
+        let basepoint = spending_key_generator();
         buf[0..32].copy_from_slice(&basepoint.to_bytes());
 
         // nk is allowed to be the identity.

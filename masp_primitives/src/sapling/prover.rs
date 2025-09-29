@@ -86,7 +86,7 @@ pub trait TxProver {
 pub mod mock {
     use crate::{
         asset_type::AssetType,
-        constants::SPENDING_KEY_GENERATOR,
+        constants::spending_key_generator,
         convert::AllowedConversion,
         merkle_tree::MerklePath,
         sapling::{
@@ -121,7 +121,7 @@ pub mod mock {
             let cv = asset_type.value_commitment(value, rcv).commitment().into();
 
             let rk =
-                PublicKey(proof_generation_key.ak.into()).randomize(ar, SPENDING_KEY_GENERATOR);
+                PublicKey(proof_generation_key.ak.into()).randomize(ar, spending_key_generator());
 
             Ok(([0u8; GROTH_PROOF_SIZE], cv, rk))
         }

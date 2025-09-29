@@ -487,7 +487,7 @@ impl<Proof: Clone + PartialOrd> PartialOrd for OutputDescription<Proof> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         (
             self.cv.to_bytes(),
-            self.cmu.to_bytes(),
+            self.cmu.to_bytes_le(),
             self.ephemeral_key.clone(),
             self.enc_ciphertext,
             self.out_ciphertext,
@@ -495,7 +495,7 @@ impl<Proof: Clone + PartialOrd> PartialOrd for OutputDescription<Proof> {
         )
             .partial_cmp(&(
                 other.cv.to_bytes(),
-                other.cmu.to_bytes(),
+                other.cmu.to_bytes_le(),
                 other.ephemeral_key.clone(),
                 other.enc_ciphertext,
                 other.out_ciphertext,
@@ -509,7 +509,7 @@ impl<Proof: Clone + Hash> Hash for OutputDescription<Proof> {
         H: Hasher,
     {
         self.cv.to_bytes().hash(state);
-        self.cmu.to_bytes().hash(state);
+        self.cmu.to_bytes_le().hash(state);
         self.ephemeral_key.hash(state);
         self.enc_ciphertext.hash(state);
         self.out_ciphertext.hash(state);
@@ -529,12 +529,12 @@ impl<Proof: Clone + PartialOrd> PartialOrd for ConvertDescription<Proof> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         (
             self.cv.to_bytes(),
-            self.anchor.to_bytes(),
+            self.anchor.to_bytes_le(),
             self.zkproof.clone(),
         )
             .partial_cmp(&(
                 other.cv.to_bytes(),
-                other.anchor.to_bytes(),
+                other.anchor.to_bytes_le(),
                 other.zkproof.clone(),
             ))
     }
@@ -546,7 +546,7 @@ impl<Proof: PartialEq + Hash> Hash for ConvertDescription<Proof> {
         H: Hasher,
     {
         self.cv.to_bytes().hash(state);
-        self.anchor.to_bytes().hash(state);
+        self.anchor.to_bytes_le().hash(state);
         self.zkproof.hash(state);
     }
 }
@@ -625,7 +625,7 @@ pub mod testing {
     use rand::{SeedableRng, rngs::StdRng};
 
     use crate::{
-        constants::{SPENDING_KEY_GENERATOR, VALUE_COMMITMENT_RANDOMNESS_GENERATOR},
+        constants::{spending_key_generator, value_commitment_randomness_generator},
         sapling::{
             Nullifier,
             redjubjub::{PrivateKey, PublicKey},
@@ -654,9 +654,9 @@ pub mod testing {
         /// roundtrip testing).
         pub fn arb_spend_description()(
             cv in arb_extended_point(),
-            anchor in vec(any::<u8>(), 64)
-                .prop_map(|v| <[u8;64]>::try_from(v.as_slice()).unwrap())
-                .prop_map(|v| bls12_381::Scalar::from_bytes_wide(&v)),
+            anchor in vec(any::<u8>(), 32)
+                .prop_map(|v| <[u8;32]>::try_from(v.as_slice()).unwrap())
+                .prop_map(|v| bls12_381::Scalar::from_bytes_le(&v).unwrap()),
             nullifier in prop::array::uniform32(any::<u8>())
                 .prop_map(|v| Nullifier::from_slice(&v).unwrap()),
             zkproof in vec(any::<u8>(), GROTH_PROOF_SIZE)
@@ -666,14 +666,14 @@ pub mod testing {
         ) -> SpendDescription<Authorized> {
             let mut rng = StdRng::from_seed(rng_seed);
             let sk1 = PrivateKey(jubjub::Fr::random(&mut rng));
-            let rk = PublicKey::from_private(&sk1, SPENDING_KEY_GENERATOR);
+            let rk = PublicKey::from_private(&sk1, spending_key_generator());
             SpendDescription {
                 cv,
                 anchor,
                 nullifier,
                 rk,
                 zkproof,
-                spend_auth_sig: sk1.sign(&fake_sighash_bytes, &mut rng, SPENDING_KEY_GENERATOR),
+                spend_auth_sig: sk1.sign(&fake_sighash_bytes, &mut rng, spending_key_generator()),
             }
         }
     }
@@ -683,9 +683,9 @@ pub mod testing {
         /// roundtrip testing).
         pub fn arb_output_description()(
             cv in arb_extended_point(),
-            cmu in vec(any::<u8>(), 64)
-                .prop_map(|v| <[u8;64]>::try_from(v.as_slice()).unwrap())
-                .prop_map(|v| bls12_381::Scalar::from_bytes_wide(&v)),
+            cmu in vec(any::<u8>(), 32)
+                .prop_map(|v| <[u8;32]>::try_from(v.as_slice()).unwrap())
+                .prop_map(|v| bls12_381::Scalar::from_bytes_le(&v).unwrap()),
             enc_ciphertext in vec(any::<u8>(), 580+32)
                 .prop_map(|v| <[u8;580+32]>::try_from(v.as_slice()).unwrap()),
             epk in arb_extended_point(),
@@ -726,7 +726,7 @@ pub mod testing {
                         shielded_converts,
                         shielded_outputs,
                         value_balance,
-                        authorization: Authorized { binding_sig: bsk.sign(&fake_bvk_bytes, &mut rng, VALUE_COMMITMENT_RANDOMNESS_GENERATOR) },
+                        authorization: Authorized { binding_sig: bsk.sign(&fake_bvk_bytes, &mut rng, value_commitment_randomness_generator()) },
                     }
                 )
             }
@@ -744,9 +744,9 @@ pub mod testing {
         /// roundtrip testing).
         pub fn arb_convert_description()(
             cv in arb_extended_point(),
-            anchor in vec(any::<u8>(), 64)
-                .prop_map(|v| <[u8;64]>::try_from(v.as_slice()).unwrap())
-                .prop_map(|v| bls12_381::Scalar::from_bytes_wide(&v)),
+            anchor in vec(any::<u8>(), 32)
+                .prop_map(|v| <[u8;32]>::try_from(v.as_slice()).unwrap())
+                .prop_map(|v| bls12_381::Scalar::from_bytes_le(&v).unwrap()),
             zkproof in vec(any::<u8>(), GROTH_PROOF_SIZE)
                 .prop_map(|v| <[u8;GROTH_PROOF_SIZE]>::try_from(v.as_slice()).unwrap()),
         ) -> ConvertDescription<GrothProofBytes> {

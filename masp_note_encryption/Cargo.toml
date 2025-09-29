@@ -19,6 +19,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
+bls12_381 = {package = "nam-blstrs", version = "0.7.1-nam.0" }
 cipher = { version = "0.4", default-features = false }
 chacha20 = { version = "0.9", default-features = false }
 chacha20poly1305 = { version = "0.10", default-features = false }

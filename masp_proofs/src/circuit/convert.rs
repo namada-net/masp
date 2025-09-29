@@ -10,6 +10,7 @@ use crate::circuit::sapling::expose_value_commitment;
 use bellman::gadgets::Assignment;
 use bellman::gadgets::boolean;
 use bellman::gadgets::num;
+use group::ff::Field;
 
 pub const TREE_DEPTH: usize = masp_primitives::sapling::SAPLING_COMMITMENT_TREE_DEPTH;
 
@@ -41,7 +42,7 @@ impl Circuit<bls12_381::Scalar> for Convert {
         {
             // Compute the note's value as a linear combination
             // of the bits.
-            let mut coeff = bls12_381::Scalar::one();
+            let mut coeff = bls12_381::Scalar::ONE;
             for bit in &value_bits {
                 value_num = value_num.add_bool_with_coeff(CS::one(), bit, coeff);
                 coeff = coeff.double();
@@ -116,7 +117,7 @@ impl Circuit<bls12_381::Scalar> for Convert {
             cs.enforce(
                 || "conditionally enforce correct root",
                 |lc| lc + cur.get_variable() - rt.get_variable(),
-                |lc| lc + &value_num.lc(bls12_381::Scalar::one()),
+                |lc| lc + &value_num.lc(bls12_381::Scalar::ONE),
                 |lc| lc,
             );
 
@@ -221,7 +222,7 @@ fn test_convert_circuit_with_bls12_381() {
             );
 
             assert_eq!(cs.num_inputs(), 4);
-            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::one());
+            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::ONE);
             assert_eq!(
                 cs.get_input(1, "value commitment/commitment point/u/input variable"),
                 expected_value_commitment.get_u()

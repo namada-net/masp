@@ -11,11 +11,13 @@ use masp_primitives::{
 
 use super::ecc;
 use super::pedersen_hash;
+use crate::circuit::gadgets;
 use crate::constants::{
     NOTE_COMMITMENT_RANDOMNESS_GENERATOR, NULLIFIER_POSITION_GENERATOR,
     PROOF_GENERATION_KEY_GENERATOR, SPENDING_KEY_GENERATOR, VALUE_COMMITMENT_RANDOMNESS_GENERATOR,
 };
 use bellman::gadgets::{Assignment, blake2s, boolean, multipack, num};
+use group::ff::Field;
 use itertools::multizip;
 
 pub const TREE_DEPTH: usize = SAPLING_COMMITMENT_TREE_DEPTH;
@@ -113,7 +115,7 @@ where
     // Booleanize the randomness. This does not ensure
     // the bit representation is "in the field" because
     // it doesn't matter for security.
-    let rcv = boolean::field_into_boolean_vec_le(
+    let rcv = gadgets::field_into_boolean_vec_le(
         cs.namespace(|| "rcv"),
         value_commitment.as_ref().map(|c| c.randomness),
     )?;
@@ -152,7 +154,7 @@ impl Circuit<bls12_381::Scalar> for Spend {
 
         // Rerandomize ak and expose it as an input to the circuit
         {
-            let ar = boolean::field_into_boolean_vec_le(cs.namespace(|| "ar"), self.ar)?;
+            let ar = gadgets::field_into_boolean_vec_le(cs.namespace(|| "ar"), self.ar)?;
 
             // Compute the randomness in the exponent
             let ar = ecc::fixed_base_multiplication(
@@ -170,7 +172,7 @@ impl Circuit<bls12_381::Scalar> for Spend {
         let nk;
         {
             // Witness nsk as bits
-            let nsk = boolean::field_into_boolean_vec_le(
+            let nsk = gadgets::field_into_boolean_vec_le(
                 cs.namespace(|| "nsk"),
                 self.proof_generation_key.as_ref().map(|k| k.nsk),
             )?;
@@ -254,7 +256,7 @@ impl Circuit<bls12_381::Scalar> for Spend {
 
             // Compute the note's value as a linear combination
             // of the bits.
-            let mut coeff = bls12_381::Scalar::one();
+            let mut coeff = bls12_381::Scalar::ONE;
             for bit in &value_bits {
                 value_num = value_num.add_bool_with_coeff(CS::one(), bit, coeff);
                 coeff = coeff.double();
@@ -290,7 +292,7 @@ impl Circuit<bls12_381::Scalar> for Spend {
 
         {
             // Booleanize the randomness for the note commitment
-            let rcm = boolean::field_into_boolean_vec_le(
+            let rcm = gadgets::field_into_boolean_vec_le(
                 cs.namespace(|| "rcm"),
                 self.commitment_randomness,
             )?;
@@ -375,7 +377,7 @@ impl Circuit<bls12_381::Scalar> for Spend {
             cs.enforce(
                 || "conditionally enforce correct root",
                 |lc| lc + cur.get_variable() - rt.get_variable(),
-                |lc| lc + &value_num.lc(bls12_381::Scalar::one()),
+                |lc| lc + &value_num.lc(bls12_381::Scalar::ONE),
                 |lc| lc,
             );
 
@@ -513,7 +515,7 @@ impl Circuit<bls12_381::Scalar> for Output {
             note_contents.extend(g_d.repr(cs.namespace(|| "representation of g_d"))?);
 
             // Booleanize our ephemeral secret key
-            let esk = boolean::field_into_boolean_vec_le(cs.namespace(|| "esk"), self.esk)?;
+            let esk = gadgets::field_into_boolean_vec_le(cs.namespace(|| "esk"), self.esk)?;
 
             // Create the ephemeral public key from g_d.
             let epk = g_d.mul(cs.namespace(|| "epk computation"), &esk)?;
@@ -567,7 +569,7 @@ impl Circuit<bls12_381::Scalar> for Output {
 
         {
             // Booleanize the randomness
-            let rcm = boolean::field_into_boolean_vec_le(
+            let rcm = gadgets::field_into_boolean_vec_le(
                 cs.namespace(|| "rcm"),
                 self.commitment_randomness,
             )?;
@@ -737,7 +739,7 @@ fn test_input_circuit_with_bls12_381() {
             }
 
             assert_eq!(cs.num_inputs(), 8);
-            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::one());
+            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::ONE);
             assert_eq!(cs.get_input(1, "rk/u/input variable"), rk.get_u());
             assert_eq!(cs.get_input(2, "rk/v/input variable"), rk.get_v());
             assert_eq!(
@@ -927,7 +929,7 @@ fn test_input_circuit_with_bls12_381_external_test_vectors() {
             assert_eq!(cs.get("randomization of note commitment/u3/num"), cmu);
 
             assert_eq!(cs.num_inputs(), 8);
-            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::one());
+            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::ONE);
             assert_eq!(cs.get_input(1, "rk/u/input variable"), rk.get_u());
             assert_eq!(cs.get_input(2, "rk/v/input variable"), rk.get_v());
             assert_eq!(
@@ -1041,7 +1043,7 @@ fn test_output_circuit_with_bls12_381() {
                     .to_affine();
 
             assert_eq!(cs.num_inputs(), 6);
-            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::one());
+            assert_eq!(cs.get_input(0, "ONE"), bls12_381::Scalar::ONE);
             assert_eq!(
                 cs.get_input(1, "value commitment/commitment point/u/input variable"),
                 expected_value_commitment.get_u()

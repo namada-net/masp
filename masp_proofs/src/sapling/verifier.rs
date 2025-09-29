@@ -68,7 +68,7 @@ impl SaplingVerificationContextInner {
         }
 
         // Construct public input for circuit
-        let mut public_input = [bls12_381::Scalar::zero(); 7];
+        let mut public_input = [bls12_381::Scalar::default(); 7];
         {
             let affine = rk_affine;
             let (u, v) = (affine.get_u(), affine.get_v());
@@ -117,7 +117,7 @@ impl SaplingVerificationContextInner {
         self.cv_sum += cv;
 
         // Construct public input for circuit
-        let mut public_input = [bls12_381::Scalar::zero(); 3];
+        let mut public_input = [bls12_381::Scalar::default(); 3];
         {
             let affine = cv.to_affine();
             let (u, v) = (affine.get_u(), affine.get_v());
@@ -148,7 +148,7 @@ impl SaplingVerificationContextInner {
         self.cv_sum -= cv;
 
         // Construct public input for circuit
-        let mut public_input = [bls12_381::Scalar::zero(); 5];
+        let mut public_input = [bls12_381::Scalar::default(); 5];
         {
             let affine = cv.to_affine();
             let (u, v) = (affine.get_u(), affine.get_v());

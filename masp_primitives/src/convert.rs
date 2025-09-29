@@ -11,6 +11,7 @@ use borsh::schema::Definition;
 use borsh::schema::Fields;
 use borsh::schema::add_definition;
 use borsh::{BorshDeserialize, BorshSerialize};
+use ff::Field;
 use group::{Curve, GroupEncoding};
 use std::collections::BTreeMap;
 use std::{
@@ -31,7 +32,7 @@ impl AllowedConversion {
     pub fn uncommitted() -> bls12_381::Scalar {
         // The smallest u-coordinate that is not on the curve
         // is one.
-        bls12_381::Scalar::one()
+        bls12_381::Scalar::ONE
     }
 
     /// Computes the note commitment, returning the full point.

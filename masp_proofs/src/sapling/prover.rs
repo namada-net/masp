@@ -1,12 +1,16 @@
+use super::masp_compute_value_balance;
+use crate::circuit::convert::Convert;
+use crate::circuit::sapling::{Output, Spend};
 use bellman::{
     gadgets::multipack,
     groth16::{Parameters, PreparedVerifyingKey, Proof, create_random_proof, verify_proof},
 };
 use bls12_381::Bls12;
+use group::ff::Field;
 use group::{Curve, GroupEncoding};
 use masp_primitives::{
     asset_type::AssetType,
-    constants::{SPENDING_KEY_GENERATOR, VALUE_COMMITMENT_RANDOMNESS_GENERATOR},
+    constants::{spending_key_generator, value_commitment_randomness_generator},
     convert::AllowedConversion,
     merkle_tree::MerklePath,
     sapling::{
@@ -17,10 +21,6 @@ use masp_primitives::{
 };
 use rand_core::OsRng;
 use std::ops::{AddAssign, Neg};
-
-use super::masp_compute_value_balance;
-use crate::circuit::convert::Convert;
-use crate::circuit::sapling::{Output, Spend};
 
 /// A context object for creating the Sapling components of a Zcash transaction.
 pub struct SaplingProvingContext {
@@ -84,7 +84,7 @@ impl SaplingProvingContext {
         let payment_address = viewing_key.to_payment_address(diversifier).ok_or(())?;
 
         // This is the result of the re-randomization, we compute it for the caller
-        let rk = PublicKey(proof_generation_key.ak.into()).randomize(ar, SPENDING_KEY_GENERATOR);
+        let rk = PublicKey(proof_generation_key.ak.into()).randomize(ar, spending_key_generator());
 
         // Let's compute the nullifier while we have the position
         let note = Note {
@@ -118,7 +118,7 @@ impl SaplingProvingContext {
 
         // Try to verify the proof:
         // Construct public input for circuit
-        let mut public_input = [bls12_381::Scalar::zero(); 7];
+        let mut public_input = [bls12_381::Scalar::ZERO; 7];
         {
             let affine = rk.0.to_affine();
             let (u, v) = (affine.get_u(), affine.get_v());
@@ -253,7 +253,7 @@ impl SaplingProvingContext {
 
         // Try to verify the proof:
         // Construct public input for circuit
-        let mut public_input = [bls12_381::Scalar::zero(); 3];
+        let mut public_input = [bls12_381::Scalar::ZERO; 3];
         {
             let affine = jubjub::ExtendedPoint::from(value_commitment.commitment()).to_affine();
             let (u, v) = (affine.get_u(), affine.get_v());
@@ -288,7 +288,7 @@ impl SaplingProvingContext {
         let bsk = PrivateKey(self.bsk);
 
         // Grab the `bvk` using DerivePublic.
-        let bvk = PublicKey::from_private(&bsk, VALUE_COMMITMENT_RANDOMNESS_GENERATOR);
+        let bvk = PublicKey::from_private(&bsk, value_commitment_randomness_generator());
 
         // In order to check internal consistency, let's use the accumulated value
         // commitments (as the verifier would) and apply value_balance to compare
@@ -321,7 +321,7 @@ impl SaplingProvingContext {
         Ok(bsk.sign(
             &data_to_be_signed,
             &mut rng,
-            VALUE_COMMITMENT_RANDOMNESS_GENERATOR,
+            value_commitment_randomness_generator(),
         ))
     }
 }
