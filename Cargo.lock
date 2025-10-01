@@ -1174,7 +1174,7 @@ checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 
 [[package]]
 name = "masp_note_encryption"
-version = "3.0.5"
+version = "3.0.6"
 dependencies = [
  "arbitrary",
  "borsh",
@@ -1188,7 +1188,7 @@ dependencies = [
 
 [[package]]
 name = "masp_primitives"
-version = "3.0.5"
+version = "3.0.6"
 dependencies = [
  "aes",
  "arbitrary",
@@ -1224,7 +1224,7 @@ dependencies = [
 
 [[package]]
 name = "masp_proofs"
-version = "3.0.5"
+version = "3.0.6"
 dependencies = [
  "blake2b_simd",
  "byteorder",
@@ -1300,9 +1300,9 @@ dependencies = [
 
 [[package]]
 name = "nam-bellperson"
-version = "0.26.2-nam.2"
+version = "0.26.3-nam.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "130c55b8c2814e06aeb0d919e2aaaf8c7ef0a80cd6bdeca2d5d680e1cc382258"
+checksum = "f4d12cf4d10a12d0618ad038fdc7b9b2fa3ac5b2318ca03f3acc1a28318bb4f2"
 dependencies = [
  "bellpepper-core",
  "bincode",
@@ -1325,6 +1325,7 @@ dependencies = [
  "serde",
  "sha2",
  "thiserror 1.0.69",
+ "wasmtimer",
 ]
 
 [[package]]
@@ -2465,6 +2466,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f143854a3b13752c6950862c906306adb27c7e839f7414cec8fea35beab624c1"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "wasmtimer"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c598d6b99ea013e35844697fc4670d08339d5cda15588f193c6beedd12f644b"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
 ]
 
 [[package]]
