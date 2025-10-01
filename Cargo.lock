@@ -1300,9 +1300,9 @@ dependencies = [
 
 [[package]]
 name = "nam-bellperson"
-version = "0.26.4-nam.1"
+version = "0.26.5-nam.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7086c1d520462b5db7ac4600305570d01d5abe51d1ac587dd8220ee434f12daa"
+checksum = "2518744be8c4c7899e55f22df7f96e4ed02fd90d900e6df22eb13a9b239876a3"
 dependencies = [
  "bellpepper-core",
  "bincode",
@@ -1325,7 +1325,6 @@ dependencies = [
  "serde",
  "sha2",
  "thiserror 1.0.69",
- "wasmtimer",
 ]
 
 [[package]]
@@ -2466,16 +2465,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f143854a3b13752c6950862c906306adb27c7e839f7414cec8fea35beab624c1"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "wasmtimer"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c598d6b99ea013e35844697fc4670d08339d5cda15588f193c6beedd12f644b"
-dependencies = [
- "js-sys",
- "wasm-bindgen",
 ]
 
 [[package]]
