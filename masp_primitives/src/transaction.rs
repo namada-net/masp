@@ -237,6 +237,15 @@ pub struct Transaction {
     data: TransactionData<Authorized>,
 }
 
+impl Transaction {
+    pub fn transaction(txid: TxId, data: TransactionData<Authorized>) -> Self {
+        Self {
+            txid,
+            data,
+        }
+    }
+}
+
 impl Deref for Transaction {
     type Target = TransactionData<Authorized>;
 
