@@ -1,3 +1,0 @@
-masp-convert.vk filter=lfs diff=lfs merge=lfs -text
-masp-output.vk filter=lfs diff=lfs merge=lfs -text
-masp-spend.vk filter=lfs diff=lfs merge=lfs -text
