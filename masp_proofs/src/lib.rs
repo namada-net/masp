@@ -2,6 +2,17 @@
 //!
 //! `masp_proofs` contains the zk-SNARK circuits used by MASP based on Zcash Sapling, and the APIs for creating
 //! and verifying proofs.
+//!
+//! ## GPU acceleration
+//!
+//! CUDA and OpenCL backends are supported via [`bellperson`](bellman). To enable them,
+//! set the `RUSTFLAGS` environment variable to `--cfg $backend`, where `$backend` assumes
+//! the following values:
+//!
+//! - `masp_proof_backend_cuda` for CUDA.
+//! - `masp_proof_backend_opencl` for OpenCL.
+//!
+//! These `cfg` flags are mutually exclusive.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 // Catch documentation errors caused by code changes.
