@@ -19,7 +19,6 @@ masp_primitives = { version = "3.0.5", path = "../masp_primitives" }
 
 # Dependencies exposed in a public API:
 # (Breaking upgrades to these require a breaking upgrade to this crate.)
-bellman = { package = "nam-bellperson", version="0.26.5-nam.1", features = ["groth16"] }
 bls12_381 = {package = "nam-blstrs", version = "0.7.1-nam.0" }
 ff = "0.13"
 group = "0.13"
@@ -38,6 +37,17 @@ directories = { version = "5.0", optional = true }
 redjubjub = {package = "nam-redjubjub", version = "0.7.1-nam.0" }
 getrandom = { version = "0.2" }
 itertools = "0.14"
+
+# Bellman is also used in the public API, so an update to it
+# might warrant a major version bump
+[target.'cfg(masp_proof_backend_cuda)'.dependencies]
+bellman = { package = "nam-bellperson", version = "0.26.6-nam.1", features = ["groth16", "cuda"] }
+
+[target.'cfg(masp_proof_backend_opencl)'.dependencies]
+bellman = { package = "nam-bellperson", version = "0.26.6-nam.1", features = ["groth16", "opencl"] }
+
+[target.'cfg(all(not(masp_proof_backend_cuda), not(masp_proof_backend_opencl)))'.dependencies]
+bellman = { package = "nam-bellperson", version = "0.26.6-nam.1", features = ["groth16"] }
 
 [dev-dependencies]
 byteorder = "1"
